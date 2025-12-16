@@ -48,6 +48,8 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
   var isValidating by remember { mutableStateOf(false) }
   var showBrowser by remember { mutableStateOf(false) }
   var browserStartUrl by remember { mutableStateOf<String?>(null) }
+  
+  var urlFromBrowser by remember { mutableStateOf(false) }
 
   var sessionCookie by remember {
     mutableStateOf(
@@ -187,14 +189,20 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
     scope.launch {
       isValidating = true
 
-      val isDownload = isDownloadableFile(inputUrl)
+      
+      if (!urlFromBrowser) {
+        val isDownload = isDownloadableFile(inputUrl)
 
-      if (!isDownload) {
-        isValidating = false
-        browserStartUrl = inputUrl
-        showBrowser = true
-        return@launch
+        if (!isDownload) {
+          isValidating = false
+          browserStartUrl = inputUrl
+          showBrowser = true
+          return@launch
+        }
       }
+
+  
+      urlFromBrowser = false
 
       when (val result = detectFileType(inputUrl)) {
         is FileDetectionResult.Success -> {
@@ -252,7 +260,11 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
 
                                   OutlinedTextField(
                                       value = inputUrl,
-                                      onValueChange = { inputUrl = it },
+                                      onValueChange = { 
+                                        inputUrl = it
+                                        
+                                        urlFromBrowser = false
+                                      },
                                       label = { Text("File URL") },
                                       placeholder = { Text("https://example.com/payload.zip") },
                                       modifier = Modifier.weight(1f),
@@ -329,6 +341,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                         onLoadDifferent = {
                           viewModel.resetRemote()
                           inputUrl = ""
+                          urlFromBrowser = false 
 
                           val shouldPersist = prefs.getBoolean("persist_cookie", false)
                           if (!shouldPersist) {
@@ -352,6 +365,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                               onClick = {
                                 viewModel.resetRemote()
                                 inputUrl = ""
+                                urlFromBrowser = false 
                               }) {
                                 Text("Try Again")
                               }
@@ -405,6 +419,8 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                 initialUrl = browserStartUrl,
                 onDownloadCaptured = { url, cookie ->
                   inputUrl = url
+                  urlFromBrowser = true
+                  
                   if (cookie != null && cookie.isNotEmpty()) {
                     sessionCookie = cookie
                     if (prefs.getBoolean("persist_cookie", false)) {
