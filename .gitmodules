@@ -3,7 +3,7 @@
 	url = https://github.com/sheredom/json.h.git
 [submodule "windows/external/digest"]
 	path = windows/external/digest
-	url = https://github.com/rhythmcache/digest
+	url = https://github.com/rhythmcache/digest.git
 [submodule "windows/external/imgui"]
 	path = windows/external/imgui
-	url = https://github.com/ocornut/imgui
+	url = https://github.com/ocornut/imgui.git
