@@ -3,6 +3,7 @@
 Windows and Android app to extract Android OTA payloads from local files or HTTP URLs.
 
 ---
+- [DOWNLOAD](https://github.com/rhythmcache/payload-dumper-gui/releases)
 
 ## Features
 - Supports **payload.bin** and **OTA ZIP** files
