@@ -286,7 +286,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                                 onClick = { handleLoadPartitions() },
                                 enabled =
                                     hasPermission && inputUrl.startsWith("http") && !isValidating,
-                                modifier = Modifier.fillMaxWidth().height(56.dp)) {
+                                modifier = Modifier.fillMaxWidth(0.7f).height(56.dp)) {
                                   if (isValidating) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(24.dp),
