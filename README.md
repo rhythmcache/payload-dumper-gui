@@ -17,17 +17,17 @@ Windows and Android app to extract Android OTA payloads from local files or HTTP
 ## Screenshots
 ### Android
 
-  ![Android Screenshot 1](./images/image1.png)
+![Android Screenshot 1](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image1.png)
 
-  ![Android Screenshot 2](./images/image2.png)
+![Android Screenshot 2](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image2.png)
 
-  ![Android Screenshot 3](./images/image3.png)
+![Android Screenshot 3](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image3.png)
 
-  ![Android Screenshot 4](./images/image4.png)
+![Android Screenshot 4](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image4.png)
 
 ### Windows
 
-![Windows screenshot](./images/windows.png)
+![Windows screenshot](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/windows.png)
 
 ---
 
