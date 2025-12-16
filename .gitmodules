@@ -1,0 +1,9 @@
+[submodule "windows/external/json.h"]
+	path = windows/external/json.h
+	url = https://github.com/sheredom/json.h.git
+[submodule "windows/external/digest"]
+	path = windows/external/digest
+	url = https://github.com/rhythmcache/digest
+[submodule "windows/external/imgui"]
+	path = windows/external/imgui
+	url = https://github.com/ocornut/imgui

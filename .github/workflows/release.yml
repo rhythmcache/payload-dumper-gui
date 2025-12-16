@@ -1,0 +1,211 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  
+permissions:
+  contents: write
+  
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from Cargo.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+  build-windows:
+    needs: get-version
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x64
+          - target: i686-pc-windows-msvc
+            arch: x86
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Install Meson and Ninja
+        run: pip install meson ninja
+
+      - name: Clone payload-dumper-rust
+        shell: bash
+        run: |
+          cd ..
+          git clone https://github.com/rhythmcache/payload-dumper-rust.git
+
+      - name: Patch Cargo.toml
+        shell: bash
+        run: |
+          cd ../payload-dumper-rust
+          sed -i '/^\[lib\]/a crate-type = ["staticlib"]' Cargo.toml
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+
+      - name: Patch header
+        shell: bash
+        run: |
+          cd ../payload-dumper-rust/include
+          sed -i '/^#define PAYLOAD_DUMPER_MAJOR/d' payload_dumper.hpp
+          sed -i '/^#define PAYLOAD_DUMPER_MINOR/d' payload_dumper.hpp
+          sed -i '/^#define PAYLOAD_DUMPER_PATCH/d' payload_dumper.hpp
+          sed -i "1i #define PAYLOAD_DUMPER_MAJOR ${{ steps.version.outputs.major }}" payload_dumper.hpp
+          sed -i "2i #define PAYLOAD_DUMPER_MINOR ${{ steps.version.outputs.minor }}" payload_dumper.hpp
+          sed -i "3i #define PAYLOAD_DUMPER_PATCH ${{ steps.version.outputs.patch }}" payload_dumper.hpp
+
+      - name: Build library
+        shell: cmd
+        run: |
+          cd ..\payload-dumper-rust
+          set RUSTFLAGS=-C target-feature=+crt-static
+          cargo build --release --lib --features capi --target ${{ matrix.target }}
+
+      - name: Verify files
+        shell: bash
+        run: |
+          find ../payload-dumper-rust/target/${{ matrix.target }}/release/ -name "*.lib" -o -name "*.a"
+
+      - name: Meson setup
+        shell: pwsh
+        run: |
+          cd windows
+          $libPath = Join-Path $env:GITHUB_WORKSPACE "..\payload-dumper-rust\target\${{ matrix.target }}\release"
+          $incPath = Join-Path $env:GITHUB_WORKSPACE "..\payload-dumper-rust\include"
+          Write-Host "Library path: $libPath"
+          Write-Host "Include path: $incPath"
+          meson setup build --vsenv "-Dpayload_inc=$incPath" "-Dpayload_lib=$libPath"
+
+      - name: Build
+        shell: cmd
+        run: |
+          cd windows
+          ninja -C build
+
+      - name: Rename
+        shell: bash
+        run: |
+          ARCH_NAME="${{ matrix.arch }}"
+          if [ "$ARCH_NAME" = "x64" ]; then
+            ARCH_NAME="x86_64"
+          fi
+          mv windows/build/payload-dumper-gui.exe "payload-dumper-gui-windows-${ARCH_NAME}-${{ needs.get-version.outputs.version }}.exe"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: payload-dumper-gui-windows-*.exe
+
+  build-android:
+    needs: get-version
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Decode
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > payload-dumper-release.keystore
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Build Release APKs
+        env:
+          KEYSTORE_PATH: payload-dumper-release.keystore
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APKs
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          cd app/build/outputs/apk/release
+          mv app-arm64-v8a-release.apk "payload-dumper-android-arm64-v8a-${VERSION}.apk"
+          mv app-armeabi-v7a-release.apk "payload-dumper-android-armeabi-v7a-${VERSION}.apk"
+          mv app-x86-release.apk "payload-dumper-android-x86-${VERSION}.apk"
+          mv app-x86_64-release.apk "payload-dumper-android-x86_64-${VERSION}.apk"
+          mv app-universal-release.apk "payload-dumper-android-universal-${VERSION}.apk"
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: app/build/outputs/apk/release/payload-dumper-android-*.apk
+
+  release:
+    needs: [get-version, build-windows, build-android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.get-version.outputs.version }}
+          name: Release v${{ needs.get-version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/windows-x64/*.exe
+            artifacts/windows-x86/*.exe
+            artifacts/android-apks/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

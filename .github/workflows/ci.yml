@@ -1,0 +1,33 @@
+name: Android CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: java set up
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: android SDK set up
+        uses: android-actions/setup-android@v3
+
+      - name: exec perm
+        run: chmod +x gradlew
+
+      - name: Build Debug
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk

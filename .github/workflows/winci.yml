@@ -1,0 +1,103 @@
+name: Windows GUI Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x64
+          - target: i686-pc-windows-msvc
+            arch: x86
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Install Meson and Ninja
+        run: pip install meson ninja
+
+      - name: Clone payload-dumper-rust
+        shell: bash
+        run: |
+          cd ..
+          git clone https://github.com/rhythmcache/payload-dumper-rust.git
+
+      - name: Patch Cargo.toml to add staticlib
+        shell: bash
+        run: |
+          cd ../payload-dumper-rust
+          sed -i '/^\[lib\]/a crate-type = ["staticlib"]' Cargo.toml
+
+      - name: Get version from Cargo.toml
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+
+      - name: Patch payload_dumper.hpp with version
+        shell: bash
+        run: |
+          cd ../payload-dumper-rust/include
+          sed -i '/^#define PAYLOAD_DUMPER_MAJOR/d' payload_dumper.hpp
+          sed -i '/^#define PAYLOAD_DUMPER_MINOR/d' payload_dumper.hpp
+          sed -i '/^#define PAYLOAD_DUMPER_PATCH/d' payload_dumper.hpp
+          sed -i "1i #define PAYLOAD_DUMPER_MAJOR ${{ steps.version.outputs.major }}" payload_dumper.hpp
+          sed -i "2i #define PAYLOAD_DUMPER_MINOR ${{ steps.version.outputs.minor }}" payload_dumper.hpp
+          sed -i "3i #define PAYLOAD_DUMPER_PATCH ${{ steps.version.outputs.patch }}" payload_dumper.hpp
+
+      - name: Build Rust library
+        shell: cmd
+        run: |
+          cd ..\payload-dumper-rust
+          set RUSTFLAGS=-C target-feature=+crt-static
+          cargo build --release --lib --features capi --target ${{ matrix.target }}
+
+      - name: Verify library files
+        shell: bash
+        run: |
+          find ../payload-dumper-rust/target/${{ matrix.target }}/release/ -name "*.lib" -o -name "*.a"
+
+      - name: Meson setup
+        shell: pwsh
+        run: |
+          cd windows
+          $libPath = Join-Path $env:GITHUB_WORKSPACE "..\payload-dumper-rust\target\${{ matrix.target }}\release"
+          $incPath = Join-Path $env:GITHUB_WORKSPACE "..\payload-dumper-rust\include"
+          Write-Host "Library path: $libPath"
+          Write-Host "Include path: $incPath"
+          meson setup build --vsenv "-Dpayload_inc=$incPath" "-Dpayload_lib=$libPath"
+
+      - name: Build with Ninja
+        shell: cmd
+        run: |
+          cd windows
+          ninja -C build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: payload-dumper-gui-${{ matrix.target }}
+          path: windows/build/payload-dumper-gui.exe

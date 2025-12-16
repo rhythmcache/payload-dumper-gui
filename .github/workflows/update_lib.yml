@@ -1,0 +1,140 @@
+name: Update Native Libraries
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64-v8a
+            target: aarch64-linux-android
+          - arch: armeabi-v7a
+            target: armv7-linux-androideabi
+          - arch: x86
+            target: i686-linux-android
+          - arch: x86_64
+            target: x86_64-linux-android
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r29
+          add-to-path: true
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Get Android minSdk
+        id: get-api
+        run: |
+          API_LEVEL=$(sed -n 's/.*minSdk[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/p' app/build.gradle.kts)
+          echo "api_level=$API_LEVEL" >> $GITHUB_OUTPUT
+
+      - name: Configure Cargo linker
+        run: |
+          mkdir -p .cargo
+          cat > .cargo/config.toml << EOF
+          [target.aarch64-linux-android]
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${{ steps.get-api.outputs.api_level }}-clang"
+          
+          [target.armv7-linux-androideabi]
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi${{ steps.get-api.outputs.api_level }}-clang"
+          
+          [target.i686-linux-android]
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android${{ steps.get-api.outputs.api_level }}-clang"
+          
+          [target.x86_64-linux-android]
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android${{ steps.get-api.outputs.api_level }}-clang"
+          EOF
+
+      - name: Set compiler environment variables
+        run: |
+          NDK_BIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          API="${{ steps.get-api.outputs.api_level }}"
+          
+          echo "CC_aarch64_linux_android=${NDK_BIN}/aarch64-linux-android${API}-clang" >> $GITHUB_ENV
+          echo "CXX_aarch64_linux_android=${NDK_BIN}/aarch64-linux-android${API}-clang++" >> $GITHUB_ENV
+          echo "AR_aarch64_linux_android=${NDK_BIN}/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB_aarch64_linux_android=${NDK_BIN}/llvm-ranlib" >> $GITHUB_ENV
+          
+          echo "CC_armv7_linux_androideabi=${NDK_BIN}/armv7a-linux-androideabi${API}-clang" >> $GITHUB_ENV
+          echo "CXX_armv7_linux_androideabi=${NDK_BIN}/armv7a-linux-androideabi${API}-clang++" >> $GITHUB_ENV
+          echo "AR_armv7_linux_androideabi=${NDK_BIN}/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB_armv7_linux_androideabi=${NDK_BIN}/llvm-ranlib" >> $GITHUB_ENV
+          
+          echo "CC_i686_linux_android=${NDK_BIN}/i686-linux-android${API}-clang" >> $GITHUB_ENV
+          echo "CXX_i686_linux_android=${NDK_BIN}/i686-linux-android${API}-clang++" >> $GITHUB_ENV
+          echo "AR_i686_linux_android=${NDK_BIN}/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB_i686_linux_android=${NDK_BIN}/llvm-ranlib" >> $GITHUB_ENV
+          
+          echo "CC_x86_64_linux_android=${NDK_BIN}/x86_64-linux-android${API}-clang" >> $GITHUB_ENV
+          echo "CXX_x86_64_linux_android=${NDK_BIN}/x86_64-linux-android${API}-clang++" >> $GITHUB_ENV
+          echo "AR_x86_64_linux_android=${NDK_BIN}/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB_x86_64_linux_android=${NDK_BIN}/llvm-ranlib" >> $GITHUB_ENV
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lib-${{ matrix.arch }}
+          path: target/${{ matrix.target }}/release/libpayload_dumper.so
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create jniLibs directories
+        run: mkdir -p app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86,x86_64}
+
+      - name: Download arm64-v8a
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-arm64-v8a
+          path: app/src/main/jniLibs/arm64-v8a/
+
+      - name: Download armeabi-v7a
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-armeabi-v7a
+          path: app/src/main/jniLibs/armeabi-v7a/
+
+      - name: Download x86
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-x86
+          path: app/src/main/jniLibs/x86/
+
+      - name: Download x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-x86_64
+          path: app/src/main/jniLibs/x86_64/
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/jniLibs/
+          git commit -m "Update native libraries"
+          git push

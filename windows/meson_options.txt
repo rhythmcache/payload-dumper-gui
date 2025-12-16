@@ -1,0 +1,2 @@
+option('payload_inc', type: 'string', description: 'Path to payload-dumper include')
+option('payload_lib', type: 'string', description: 'Path to payload-dumper lib directory')
