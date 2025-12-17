@@ -5,6 +5,7 @@ edition = "2024"
 
 [lib]
 name       = "payload_dumper"
+path       = "lib/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]

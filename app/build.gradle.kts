@@ -8,7 +8,7 @@ plugins {
 }
 
 fun getVersionFromCargoToml(): Triple<Int, Int, Int> {
-  val cargoToml = file("../Cargo.toml")
+  val cargoToml = file("./Cargo.toml")
   require(cargoToml.exists()) { "Cargo.toml not found at ${cargoToml.absolutePath}" }
 
   val lines = cargoToml.readLines()
