@@ -131,6 +131,7 @@
    <string name="select">चुनें</string>
    <string name="no_directories_found">कोई फ़ोल्डर नहीं मिला</string>
    <string name="no_files_found">कोई .zip या .bin फ़ाइल नहीं मिली</string>
+   <string name="select_storage">स्टोरेज चुनें</string>
 
     <string name="cancelled">रद्द किया गया</string>
     <string name="verifying_progress">जाँच हो रही है: %1$d%%</string>
