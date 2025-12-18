@@ -12,8 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.BuildConfig
+import com.rhythmcache.payloaddumper.R
 import com.rhythmcache.payloaddumper.SourceType
 import com.rhythmcache.payloaddumper.state.PartitionState
 import com.rhythmcache.payloaddumper.viewmodel.PayloadViewModel
@@ -80,7 +82,11 @@ fun PartitionCard(
                       Column {
                         Text(state.partition.name, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "${state.partition.size_readable} | ${state.partition.operations_count} ops | ${state.partition.compression_type.uppercase()}",
+                            stringResource(
+                                R.string.ops_compression,
+                                state.partition.size_readable,
+                                state.partition.operations_count,
+                                state.partition.compression_type.uppercase()),
                             style = MaterialTheme.typography.bodySmall)
                       }
                     }
@@ -98,7 +104,7 @@ fun PartitionCard(
                         colors =
                             ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error)) {
-                          Text("Cancel")
+                          Text(stringResource(R.string.cancel))
                         }
                   } else {
                     Button(
@@ -148,7 +154,7 @@ fun PartitionCard(
                         }) {
                           Icon(Icons.Default.SaveAlt, contentDescription = null)
                           Spacer(modifier = Modifier.width(4.dp))
-                          Text("Extract")
+                          Text(stringResource(R.string.extract))
                         }
                   }
                 }
@@ -169,7 +175,7 @@ fun PartitionCard(
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { state.verifyProgress / 100f }, modifier = Modifier.fillMaxWidth())
-            Text("Verifying: ${state.verifyProgress.toInt()}%")
+            Text(stringResource(R.string.verifying_progress, state.verifyProgress.toInt()))
           }
 
           if (!state.isVerifying && state.verifyStatus.isNotBlank()) {

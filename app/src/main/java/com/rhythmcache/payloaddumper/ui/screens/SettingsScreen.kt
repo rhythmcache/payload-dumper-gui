@@ -1,10 +1,12 @@
 package com.rhythmcache.payloaddumper.ui.screens
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.webkit.CookieManager
 import android.webkit.WebStorage
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.BuildConfig
 import com.rhythmcache.payloaddumper.FilePickerDialog
 import com.rhythmcache.payloaddumper.R
+import com.rhythmcache.payloaddumper.utils.LocaleManager
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -59,12 +63,14 @@ fun SettingsScreen() {
         prefs.getInt("custom_thread_count", Runtime.getRuntime().availableProcessors()).toString())
   }
   var themeMode by remember { mutableStateOf(prefs.getString("theme_mode", "AUTO") ?: "AUTO") }
+  var currentLanguage by remember { mutableStateOf(LocaleManager.getLanguage(context)) }
 
   var showDirPicker by remember { mutableStateOf(false) }
   var showThreadDialog by remember { mutableStateOf(false) }
   var showThemeDialog by remember { mutableStateOf(false) }
   var showUserAgentDialog by remember { mutableStateOf(false) }
   var showClearDataDialog by remember { mutableStateOf(false) }
+  var showLanguageDialog by remember { mutableStateOf(false) }
 
   Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
     Column(
@@ -75,64 +81,71 @@ fun SettingsScreen() {
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
           Text(
-              "Appearance",
+              stringResource(R.string.appearance),
               style = MaterialTheme.typography.titleMedium,
               fontWeight = FontWeight.SemiBold)
 
           SettingCard(
-              title = "Theme",
+              title = stringResource(R.string.theme),
               subtitle =
                   when (themeMode) {
-                    "AUTO" -> "Auto (System default)"
-                    "LIGHT" -> "Light"
-                    "DARK" -> "Dark"
-                    "AMOLED" -> "AMOLED (Pure black)"
-                    else -> "Auto"
+                    "AUTO" -> stringResource(R.string.theme_auto)
+                    "LIGHT" -> stringResource(R.string.theme_light)
+                    "DARK" -> stringResource(R.string.theme_dark)
+                    "AMOLED" -> stringResource(R.string.theme_amoled)
+                    else -> stringResource(R.string.theme_auto)
                   },
               icon = Icons.Default.Brightness4,
               onClick = { showThemeDialog = true })
 
+          SettingCard(
+              title = stringResource(R.string.language_label),
+              subtitle = getLanguageName(currentLanguage, context),
+              description = stringResource(R.string.language_description),
+              icon = Icons.Default.Language,
+              onClick = { showLanguageDialog = true })
+
           HorizontalDivider()
           Text(
-              "Storage",
+              stringResource(R.string.storage),
               style = MaterialTheme.typography.titleMedium,
               fontWeight = FontWeight.SemiBold)
 
           SettingCard(
-              title = "Output Directory",
+              title = stringResource(R.string.output_directory),
               subtitle = outputDir,
-              description = "Extractions saved in subdirectories with unique names",
+              description = stringResource(R.string.output_dir_description),
               icon = Icons.Default.FolderOpen,
               onClick = { showDirPicker = true })
 
           HorizontalDivider()
           Text(
-              "Network",
+              stringResource(R.string.network),
               style = MaterialTheme.typography.titleMedium,
               fontWeight = FontWeight.SemiBold)
 
           SettingCard(
-              title = "User Agent",
+              title = stringResource(R.string.user_agent),
               subtitle = userAgent,
-              description = "Used for remote ota extraction",
+              description = stringResource(R.string.user_agent_description),
               icon = Icons.Default.Edit,
               onClick = { showUserAgentDialog = true })
 
           SettingCard(
-              title = "Clear Browser Data",
-              subtitle = "Remove all browser cookies and cache",
+              title = stringResource(R.string.clear_browser_data),
+              subtitle = stringResource(R.string.clear_browser_data_subtitle),
               icon = Icons.Default.Delete,
               onClick = { showClearDataDialog = true })
 
           HorizontalDivider()
           Text(
-              "Extraction",
+              stringResource(R.string.extraction),
               style = MaterialTheme.typography.titleMedium,
               fontWeight = FontWeight.SemiBold)
 
           SettingToggleCard(
-              title = "Verify with SHA-256",
-              description = "Validate extracted partitions using checksum",
+              title = stringResource(R.string.verify_sha256),
+              description = stringResource(R.string.verify_sha256_description),
               checked = verifyOutput,
               onCheckedChange = {
                 verifyOutput = it
@@ -142,8 +155,8 @@ fun SettingsScreen() {
           Spacer(modifier = Modifier.height(4.dp))
 
           SettingToggleCard(
-              title = "Limit concurrent extractions",
-              description = "Controls how many partitions extract simultaneously",
+              title = stringResource(R.string.limit_concurrent),
+              description = stringResource(R.string.limit_concurrent_description),
               checked = limitThreading,
               onCheckedChange = {
                 limitThreading = it
@@ -152,11 +165,14 @@ fun SettingsScreen() {
 
           AnimatedVisibility(visible = limitThreading) {
             SettingCard(
-                title = "Thread limit",
+                title = stringResource(R.string.thread_limit),
                 subtitle =
                     if (threadMode == "default")
-                        "Auto (${Runtime.getRuntime().availableProcessors()} threads)"
-                    else "$customThreadCount threads",
+                        stringResource(
+                            R.string.thread_auto, Runtime.getRuntime().availableProcessors())
+                    else
+                        stringResource(
+                            R.string.threads_count, customThreadCount.toIntOrNull() ?: 1),
                 icon = Icons.Default.Edit,
                 onClick = { showThreadDialog = true },
                 containerColor = MaterialTheme.colorScheme.secondaryContainer)
@@ -223,6 +239,18 @@ fun SettingsScreen() {
         },
         onDismiss = { showUserAgentDialog = false })
   }
+
+  if (showLanguageDialog) {
+    LanguageDialog(
+        currentLanguage = currentLanguage,
+        onLanguageChange = { newLang ->
+          currentLanguage = newLang
+          LocaleManager.setLocale(context, newLang)
+          (context as? ComponentActivity)?.recreate()
+        },
+        onDismiss = { showLanguageDialog = false })
+  }
+
   if (showClearDataDialog) {
     AlertDialog(
         onDismissRequest = { showClearDataDialog = false },
@@ -232,11 +260,8 @@ fun SettingsScreen() {
               contentDescription = null,
               tint = MaterialTheme.colorScheme.error)
         },
-        title = { Text("Clear Browser Data") },
-        text = {
-          Text(
-              "This will permanently remove all cookies, cache, and browsing data from the embedded browser. This action cannot be undone.\n\nContinue?")
-        },
+        title = { Text(stringResource(R.string.clear_browser_data_title)) },
+        text = { Text(stringResource(R.string.clear_browser_data_message)) },
         confirmButton = {
           TextButton(
               onClick = {
@@ -248,21 +273,24 @@ fun SettingsScreen() {
 
                   scope.launch {
                     snackbarHostState.showSnackbar(
-                        message = "Browser data cleared successfully",
+                        message = context.getString(R.string.browser_data_cleared),
                         duration = SnackbarDuration.Short)
                   }
                 } catch (e: Exception) {
                   scope.launch {
                     snackbarHostState.showSnackbar(
-                        message = "Failed to clear browser data", duration = SnackbarDuration.Short)
+                        message = context.getString(R.string.browser_data_clear_failed),
+                        duration = SnackbarDuration.Short)
                   }
                 }
               }) {
-                Text("Clear", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.clear), color = MaterialTheme.colorScheme.error)
               }
         },
         dismissButton = {
-          TextButton(onClick = { showClearDataDialog = false }) { Text("Cancel") }
+          TextButton(onClick = { showClearDataDialog = false }) {
+            Text(stringResource(R.string.cancel))
+          }
         })
   }
 }
@@ -379,7 +407,7 @@ private fun SettingsFooter() {
             horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
               Text(
                   buildAnnotatedString {
-                    append("v")
+                    append(stringResource(R.string.version_prefix))
                     withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
                       append(BuildConfig.VERSION_NAME)
                     }
@@ -394,7 +422,7 @@ private fun SettingsFooter() {
                             SpanStyle(
                                 color = MaterialTheme.colorScheme.primary,
                                 textDecoration = TextDecoration.Underline)) {
-                          append("Source code")
+                          append(stringResource(R.string.source_code))
                         }
                   },
                   style = MaterialTheme.typography.bodySmall,
@@ -418,7 +446,7 @@ private fun ThreadLimitDialog(
 ) {
   AlertDialog(
       onDismissRequest = onDismiss,
-      title = { Text("Concurrent Extraction Limit") },
+      title = { Text(stringResource(R.string.concurrent_extraction_limit)) },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           Row(
@@ -427,9 +455,11 @@ private fun ThreadLimitDialog(
                 RadioButton(
                     selected = threadMode == "default", onClick = { onThreadModeChange("default") })
                 Column(modifier = Modifier.padding(start = 8.dp)) {
-                  Text("Auto (Recommended)")
+                  Text(stringResource(R.string.thread_auto_recommended))
                   Text(
-                      "Uses ${Runtime.getRuntime().availableProcessors()} threads (CPU cores)",
+                      stringResource(
+                          R.string.thread_auto_description,
+                          Runtime.getRuntime().availableProcessors()),
                       style = MaterialTheme.typography.bodySmall,
                       color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -440,7 +470,9 @@ private fun ThreadLimitDialog(
               modifier = Modifier.fillMaxWidth().clickable { onThreadModeChange("custom") }) {
                 RadioButton(
                     selected = threadMode == "custom", onClick = { onThreadModeChange("custom") })
-                Text("Custom", modifier = Modifier.padding(start = 8.dp))
+                Text(
+                    stringResource(R.string.thread_custom),
+                    modifier = Modifier.padding(start = 8.dp))
               }
 
           if (threadMode == "custom") {
@@ -451,16 +483,16 @@ private fun ThreadLimitDialog(
                     onCustomThreadCountChange(it)
                   }
                 },
-                label = { Text("Thread count") },
-                placeholder = { Text("1-16") },
+                label = { Text(stringResource(R.string.thread_count_label)) },
+                placeholder = { Text(stringResource(R.string.thread_count_placeholder)) },
                 modifier = Modifier.fillMaxWidth().padding(start = 40.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true)
           }
         }
       },
-      confirmButton = { TextButton(onClick = onConfirm) { Text("OK") } },
-      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+      confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.ok)) } },
+      dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } })
 }
 
 @Composable
@@ -471,32 +503,32 @@ private fun ThemeDialog(
 ) {
   AlertDialog(
       onDismissRequest = onDismiss,
-      title = { Text("Choose Theme") },
+      title = { Text(stringResource(R.string.choose_theme)) },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           ThemeOption(
-              label = "Auto",
-              description = "Follow system theme",
+              label = stringResource(R.string.theme_auto),
+              description = stringResource(R.string.theme_auto_description),
               isSelected = currentTheme == "AUTO",
               onClick = { onThemeChange("AUTO") })
           ThemeOption(
-              label = "Light",
-              description = "Light mode always",
+              label = stringResource(R.string.theme_light),
+              description = stringResource(R.string.theme_light_description),
               isSelected = currentTheme == "LIGHT",
               onClick = { onThemeChange("LIGHT") })
           ThemeOption(
-              label = "Dark",
-              description = "Dark mode always",
+              label = stringResource(R.string.theme_dark),
+              description = stringResource(R.string.theme_dark_description),
               isSelected = currentTheme == "DARK",
               onClick = { onThemeChange("DARK") })
           ThemeOption(
-              label = "AMOLED",
-              description = "Pure black for OLED screens",
+              label = stringResource(R.string.theme_amoled),
+              description = stringResource(R.string.theme_amoled_description),
               isSelected = currentTheme == "AMOLED",
               onClick = { onThemeChange("AMOLED") })
         }
       },
-      confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } })
+      confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.done)) } })
 }
 
 @Composable
@@ -520,6 +552,73 @@ private fun ThemeOption(
       }
 }
 
+@Composable
+private fun LanguageDialog(
+    currentLanguage: String,
+    onLanguageChange: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+  val context = LocalContext.current
+  val languages = LocaleManager.getAvailableLanguages()
+
+  AlertDialog(
+      onDismissRequest = onDismiss,
+      title = { Text(stringResource(R.string.choose_language)) },
+      text = {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().height(400.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              items(languages.size) { index ->
+                val lang = languages[index]
+                LanguageOption(
+                    label = stringResource(lang.nameResId),
+                    description =
+                        if (lang.code == "system")
+                            stringResource(R.string.language_system_description)
+                        else "",
+                    isSelected = currentLanguage == lang.code,
+                    onClick = {
+                      onLanguageChange(lang.code)
+                      onDismiss()
+                    })
+              }
+            }
+      },
+      confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.done)) } })
+}
+
+@Composable
+private fun LanguageOption(
+    label: String,
+    description: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        RadioButton(selected = isSelected, onClick = onClick)
+        Column(modifier = Modifier.padding(start = 8.dp)) {
+          Text(label, style = MaterialTheme.typography.bodyMedium)
+          if (description.isNotEmpty()) {
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+          }
+        }
+      }
+}
+
+private fun getLanguageName(code: String, context: Context): String {
+  return when (code) {
+    "system" -> context.getString(R.string.language_system)
+    "en" -> context.getString(R.string.language_english)
+    "hi" -> context.getString(R.string.language_hindi)
+    else -> context.getString(R.string.language_system)
+  }
+}
+
 data class UserAgentPreset(val name: String, val value: String, val description: String)
 
 @Composable
@@ -527,42 +626,43 @@ private fun UserAgentDialog(userAgent: String, onConfirm: (String) -> Unit, onDi
   var tempUserAgent by remember { mutableStateOf(userAgent) }
   var showPresets by remember { mutableStateOf(true) }
 
+  val context = LocalContext.current
   val presets = remember {
     listOf(
         UserAgentPreset(
-            name = "Default",
+            name = context.getString(R.string.ua_default),
             value = BuildConfig.USER_AGENT,
-            description = "App's default user agent"),
+            description = context.getString(R.string.ua_default_description)),
         UserAgentPreset(
-            name = "Chrome Desktop",
+            name = context.getString(R.string.ua_chrome_desktop),
             value =
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            description = "Useful for desktop-only sites"),
+            description = context.getString(R.string.ua_chrome_desktop_description)),
         UserAgentPreset(
-            name = "Chrome Mobile",
+            name = context.getString(R.string.ua_chrome_mobile),
             value =
                 "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.230 Mobile Safari/537.36",
-            description = "Modern mobile Chrome"),
+            description = context.getString(R.string.ua_chrome_mobile_description)),
         UserAgentPreset(
-            name = "Firefox Desktop",
+            name = context.getString(R.string.ua_firefox_desktop),
             value =
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-            description = "Firefox on Windows"),
+            description = context.getString(R.string.ua_firefox_desktop_description)),
         UserAgentPreset(
-            name = "Safari iOS",
+            name = context.getString(R.string.ua_safari_ios),
             value =
                 "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-            description = "iPhone Safari browser"))
+            description = context.getString(R.string.ua_safari_ios_description)))
   }
 
   AlertDialog(
       onDismissRequest = onDismiss,
-      title = { Text("User Agent") },
+      title = { Text(stringResource(R.string.user_agent)) },
       text = {
         Column(
             modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
               Text(
-                  "Change user agent if websites are loading or displaying incorrectly",
+                  stringResource(R.string.user_agent_help),
                   style = MaterialTheme.typography.bodySmall,
                   color = MaterialTheme.colorScheme.onSurfaceVariant)
               Row(
@@ -571,7 +671,7 @@ private fun UserAgentDialog(userAgent: String, onConfirm: (String) -> Unit, onDi
                     FilterChip(
                         selected = showPresets,
                         onClick = { showPresets = true },
-                        label = { Text("Presets") },
+                        label = { Text(stringResource(R.string.presets)) },
                         leadingIcon =
                             if (showPresets) {
                               {
@@ -584,7 +684,7 @@ private fun UserAgentDialog(userAgent: String, onConfirm: (String) -> Unit, onDi
                     FilterChip(
                         selected = !showPresets,
                         onClick = { showPresets = false },
-                        label = { Text("Custom") },
+                        label = { Text(stringResource(R.string.custom)) },
                         leadingIcon =
                             if (!showPresets) {
                               {
@@ -644,14 +744,16 @@ private fun UserAgentDialog(userAgent: String, onConfirm: (String) -> Unit, onDi
                 OutlinedTextField(
                     value = tempUserAgent,
                     onValueChange = { tempUserAgent = it },
-                    label = { Text("Custom User Agent") },
-                    placeholder = { Text("Enter custom user agent string") },
+                    label = { Text(stringResource(R.string.custom_user_agent)) },
+                    placeholder = { Text(stringResource(R.string.custom_user_agent_placeholder)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 6)
               }
             }
       },
-      confirmButton = { TextButton(onClick = { onConfirm(tempUserAgent) }) { Text("Save") } },
-      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+      confirmButton = {
+        TextButton(onClick = { onConfirm(tempUserAgent) }) { Text(stringResource(R.string.save)) }
+      },
+      dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } })
 }

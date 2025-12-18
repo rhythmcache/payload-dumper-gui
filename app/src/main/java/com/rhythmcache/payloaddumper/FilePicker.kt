@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import java.io.File
@@ -49,7 +50,12 @@ fun FilePickerDialog(
       Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
-              Text(text = currentPath.substringAfterLast("/").ifEmpty { "Storage" }, maxLines = 1)
+              Text(
+                  text =
+                      currentPath.substringAfterLast("/").ifEmpty {
+                        stringResource(R.string.storage)
+                      },
+                  maxLines = 1)
             },
             navigationIcon = {
               if (currentPath != rootPath) {
@@ -60,15 +66,17 @@ fun FilePickerDialog(
                         currentPath = parent
                       }
                     }) {
-                      Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                      Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
               }
             },
             actions = {
               if (selectDirectory) {
-                TextButton(onClick = { onFileSelected(currentPath) }) { Text("SELECT") }
+                TextButton(onClick = { onFileSelected(currentPath) }) {
+                  Text(stringResource(R.string.select))
+                }
               }
-              TextButton(onClick = onDismiss) { Text("CANCEL") }
+              TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             })
 
         Text(
@@ -82,7 +90,8 @@ fun FilePickerDialog(
         if (files.isEmpty()) {
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                if (selectDirectory) "No directories found" else "No .zip or .bin files found",
+                if (selectDirectory) stringResource(R.string.no_directories_found)
+                else stringResource(R.string.no_files_found),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
           }

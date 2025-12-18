@@ -3,11 +3,11 @@
 package com.rhythmcache.payloaddumper
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import com.rhythmcache.payloaddumper.ui.screens.LocalFilesScreen
@@ -26,12 +27,18 @@ import com.rhythmcache.payloaddumper.ui.screens.RemoteFilesScreen
 import com.rhythmcache.payloaddumper.ui.screens.SettingsScreen
 import com.rhythmcache.payloaddumper.ui.theme.PayloadDumperTheme
 import com.rhythmcache.payloaddumper.ui.theme.ThemeMode
+import com.rhythmcache.payloaddumper.utils.LocaleManager
 import com.rhythmcache.payloaddumper.viewmodel.PayloadViewModel
 import java.io.File
 
 class MainActivity : ComponentActivity() {
   private val viewModel: PayloadViewModel by viewModels()
   private var hasPermission by mutableStateOf(false)
+
+  override fun attachBaseContext(newBase: Context) {
+    val language = LocaleManager.getLanguage(newBase)
+    super.attachBaseContext(LocaleManager.updateResources(newBase, language))
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     setTheme(R.style.Theme_PayloadDumperGUI)
@@ -53,6 +60,9 @@ class MainActivity : ComponentActivity() {
             android.content.SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
               if (key == "theme_mode") {
                 themeMode = ThemeMode.valueOf(prefs.getString("theme_mode", "AUTO") ?: "AUTO")
+              }
+              if (key == "app_language") {
+                recreate()
               }
             }
         prefsState.registerOnSharedPreferenceChangeListener(listener)
@@ -99,7 +109,7 @@ fun MainScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
         TopAppBar(
             title = {
               Text(
-                  "Payload Dumper",
+                  stringResource(R.string.app_name),
                   style =
                       MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold))
             })
@@ -107,18 +117,26 @@ fun MainScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
       bottomBar = {
         NavigationBar {
           NavigationBarItem(
-              icon = { Icon(Icons.Default.Home, contentDescription = "Local") },
-              label = { Text("Local") },
+              icon = {
+                Icon(Icons.Default.Home, contentDescription = stringResource(R.string.nav_local))
+              },
+              label = { Text(stringResource(R.string.nav_local)) },
               selected = selectedTab == 0,
               onClick = { selectedTab = 0 })
           NavigationBarItem(
-              icon = { Icon(Icons.Default.Cloud, contentDescription = "Remote") },
-              label = { Text("Remote") },
+              icon = {
+                Icon(Icons.Default.Cloud, contentDescription = stringResource(R.string.nav_remote))
+              },
+              label = { Text(stringResource(R.string.nav_remote)) },
               selected = selectedTab == 1,
               onClick = { selectedTab = 1 })
           NavigationBarItem(
-              icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-              label = { Text("Settings") },
+              icon = {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.nav_settings))
+              },
+              label = { Text(stringResource(R.string.nav_settings)) },
               selected = selectedTab == 2,
               onClick = { selectedTab = 2 })
         }

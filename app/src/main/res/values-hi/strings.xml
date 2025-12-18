@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Payload Dumper</string>
+
+    <string name="nav_local">लोकल</string>
+    <string name="nav_remote">रिमोट</string>
+    <string name="nav_settings">सेटिंग्स</string>
+
+    <string name="cancel">रद्द करें</string>
+    <string name="close">बंद करें</string>
+    <string name="save">सेव करें</string>
+    <string name="ok">ठीक है</string>
+    <string name="done">हो गया</string>
+    <string name="clear">हटाएँ</string>
+    <string name="try_again">दोबारा कोशिश करें</string>
+    <string name="extract">एक्सट्रैक्ट करें</string>
+    <string name="search">खोजें</string>
+
+    <string name="choose_file">फ़ाइल चुनें</string>
+    <string name="error_prefix">त्रुटि: %1$s</string>
+
+    <string name="file_url">फ़ाइल URL</string>
+    <string name="file_url_placeholder">https://example.com/payload.zip</string>
+    <string name="load_partitions">पार्टिशन लोड करें</string>
+    <string name="validating_url">URL जाँचा जा रहा है…</string>
+    <string name="url_help_text">URL सीधे डाउनलोड का या किसी वेबपेज का हो सकता है</string>
+    <string name="loading_partitions">पार्टिशन लोड हो रहे हैं…</string>
+    <string name="cookie_configured">इस सेशन के लिए कुकी सेट है</string>
+    <string name="open_browser">ब्राउज़र खोलें</string>
+    <string name="cookie_settings">कुकी सेटिंग्स</string>
+
+    <string name="search_or_enter_url">खोजें या URL डालें</string>
+    <string name="download_detected">डाउनलोड मिला</string>
+    <string name="payload_file_detected">Payload फ़ाइल मिली:</string>
+    <string name="auth_cookies_transferred">ऑथेंटिकेशन कुकी ट्रांसफर की जाएँगी</string>
+    <string name="open_in_dumper">Dumper में खोलें</string>
+    <string name="browsing_history">ब्राउज़िंग हिस्ट्री</string>
+    <string name="no_browsing_history">अभी कोई हिस्ट्री नहीं है</string>
+    <string name="clear_all">सब साफ करें</string>
+    <string name="back">पीछे</string>
+    <string name="forward">आगे</string>
+    <string name="reload">रीलोड</string>
+    <string name="home">होम</string>
+    <string name="history">हिस्ट्री</string>
+    <string name="go">जाएँ</string>
+    <string name="browser">ब्राउज़र</string>
+    <string name="find_download_payload">Payload फ़ाइल खोजें और डाउनलोड करें</string>
+    <string name="back_to_remote">रिमोट फ़ाइल्स पर वापस जाएँ</string>
+
+    <string name="session_cookie">सेशन कुकी</string>
+    <string name="cookie_help_text">ऑथेंटिकेशन के लिए कुकी वैल्यू डालें (सिर्फ Cookie हेडर फ़ॉर्मेट)</string>
+    <string name="cookie">कुकी</string>
+    <string name="cookie_placeholder">key=value; key2=value2</string>
+    <string name="cookie_error_set_cookie">गलत फ़ॉर्मेट। Set-Cookie नहीं, सिर्फ Cookie हेडर पेस्ट करें।</string>
+    <string name="cookie_error_invalid">गलत फ़ॉर्मेट। केवल कुकी वैल्यू डालें (key=value; key2=value2)।</string>
+    <string name="how_to_get_cookies">कुकी कैसे लें:</string>
+    <string name="cookie_instructions">1. ब्राउज़र DevTools खोलें (F12)\n2. Network टैब पर जाएँ\n3. किसी भी रिक्वेस्ट पर क्लिक करें\n4. \'Cookie\' हेडर की वैल्यू कॉपी करें</string>
+    <string name="persist_cookie">कुकी सेव रखें</string>
+    <string name="persist_cookie_on">ऐप बंद होने के बाद भी सेव रहेगी</string>
+    <string name="persist_cookie_off">अलग payload लोड करने पर हट जाएगी</string>
+
+    <string name="appearance">दिखावट</string>
+    <string name="theme">थीम</string>
+    <string name="theme_auto">ऑटो (सिस्टम के अनुसार)</string>
+    <string name="theme_light">लाइट</string>
+    <string name="theme_dark">डार्क</string>
+    <string name="theme_amoled">AMOLED (पूरा काला)</string>
+    <string name="storage">स्टोरेज</string>
+    <string name="output_directory">आउटपुट फ़ोल्डर</string>
+    <string name="output_dir_description">एक्सट्रैक्ट की गई फ़ाइलें अलग-अलग फ़ोल्डर में सेव होंगी</string>
+    <string name="network">नेटवर्क</string>
+    <string name="user_agent">यूज़र एजेंट</string>
+    <string name="user_agent_description">रिमोट OTA एक्सट्रैक्शन के लिए इस्तेमाल होता है</string>
+    <string name="clear_browser_data">ब्राउज़र डेटा साफ करें</string>
+    <string name="clear_browser_data_subtitle">सभी कुकी और कैश हटाएँ</string>
+    <string name="extraction">एक्सट्रैक्शन</string>
+    <string name="verify_sha256">SHA-256 से जाँचें</string>
+    <string name="verify_sha256_description">निकाले गए पार्टिशन का checksum जाँचें</string>
+    <string name="limit_concurrent">एक साथ एक्सट्रैक्शन की सीमा</string>
+    <string name="limit_concurrent_description">एक समय में कितने पार्टिशन एक्सट्रैक्ट हों</string>
+    <string name="thread_limit">थ्रेड सीमा</string>
+    <string name="thread_auto">ऑटो (%1$d थ्रेड)</string>
+    <string name="threads_count">%1$d थ्रेड</string>
+    <string name="source_code">सोर्स कोड</string>
+    <string name="version_prefix">v</string>
+    <string name="language_label">भाषा</string>
+    <string name="language_description">ऐप की भाषा बदलें</string>
+
+    <string name="clear_browser_data_title">ब्राउज़र डेटा साफ करें</string>
+    <string name="clear_browser_data_message">यह ब्राउज़र की सभी कुकी, कैश और हिस्ट्री को हमेशा के लिए हटा देगा। यह वापस नहीं किया जा सकता।\n\nजारी रखें?</string>
+    <string name="browser_data_cleared">ब्राउज़र डेटा सफलतापूर्वक साफ हो गया</string>
+    <string name="browser_data_clear_failed">ब्राउज़र डेटा साफ नहीं हो पाया</string>
+
+    <string name="concurrent_extraction_limit">कॉनकरेंट एक्सट्रैक्शन सीमा</string>
+    <string name="thread_auto_recommended">ऑटो (सुझाया गया)</string>
+    <string name="thread_auto_description">%1$d थ्रेड (CPU कोर)</string>
+    <string name="thread_custom">कस्टम</string>
+    <string name="thread_count_label">थ्रेड संख्या</string>
+    <string name="thread_count_placeholder">1-16</string>
+
+    <string name="choose_theme">थीम चुनें</string>
+    <string name="theme_auto_description">सिस्टम थीम के अनुसार</string>
+    <string name="theme_light_description">हमेशा लाइट मोड</string>
+    <string name="theme_dark_description">हमेशा डार्क मोड</string>
+    <string name="theme_amoled_description">OLED स्क्रीन के लिए पूरा काला</string>
+
+    <string name="user_agent_help">अगर वेबसाइट सही से लोड नहीं हो रही हो तो यूज़र एजेंट बदलें</string>
+    <string name="presets">प्रीसेट</string>
+    <string name="custom">कस्टम</string>
+    <string name="ua_default">डिफ़ॉल्ट</string>
+    <string name="ua_default_description">ऐप का डिफ़ॉल्ट यूज़र एजेंट</string>
+    <string name="ua_chrome_desktop">Chrome डेस्कटॉप</string>
+    <string name="ua_chrome_desktop_description">सिर्फ डेस्कटॉप साइट्स के लिए</string>
+    <string name="ua_chrome_mobile">Chrome मोबाइल</string>
+    <string name="ua_chrome_mobile_description">आधुनिक मोबाइल Chrome</string>
+    <string name="ua_firefox_desktop">Firefox डेस्कटॉप</string>
+    <string name="ua_firefox_desktop_description">Windows पर Firefox</string>
+    <string name="ua_safari_ios">Safari iOS</string>
+    <string name="ua_safari_ios_description">iPhone Safari ब्राउज़र</string>
+    <string name="custom_user_agent">कस्टम यूज़र एजेंट</string>
+    <string name="custom_user_agent_placeholder">यूज़र एजेंट स्ट्रिंग डालें</string>
+
+    <string name="choose_language">भाषा चुनें</string>
+    <string name="language_system">सिस्टम डिफ़ॉल्ट</string>
+    <string name="language_system_description">डिवाइस की भाषा के अनुसार</string>
+    <string name="language_english">English</string>
+    <string name="language_hindi">हिन्दी</string>
+
+    
+   <string name="select">चुनें</string>
+   <string name="no_directories_found">कोई फ़ोल्डर नहीं मिला</string>
+   <string name="no_files_found">कोई .zip या .bin फ़ाइल नहीं मिली</string>
+
+    <string name="cancelled">रद्द किया गया</string>
+    <string name="verifying_progress">जाँच हो रही है: %1$d%%</string>
+    <string name="ops_compression">%1$s | %2$d ऑप्स | %3$s</string>
+
+    <string name="security_patch">सिक्योरिटी पैच: %1$s</string>
+    <string name="partitions_size">%1$d पार्टिशन | %2$s</string>
+    <string name="close_search">खोज बंद करें</string>
+    <string name="search_partitions">पार्टिशन खोजें</string>
+    <string name="view_raw_json">Raw JSON देखें</string>
+    <string name="load_different_payload">दूसरा Payload लोड करें</string>
+    <string name="search_partitions_placeholder">पार्टिशन खोजें…</string>
+    <string name="showing_filtered">%2$d में से %1$d दिखाए जा रहे हैं</string>
+    <string name="selected_count">%1$d चुने गए</string>
+    <string name="select_all">सब चुनें</string>
+
+    <string name="storage_permission_required">स्टोरेज की अनुमति चाहिए</string>
+    <string name="grant_permission">अनुमति दें</string>
+
+</resources>

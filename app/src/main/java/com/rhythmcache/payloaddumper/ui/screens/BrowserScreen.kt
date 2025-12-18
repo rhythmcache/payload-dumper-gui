@@ -21,6 +21,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.rhythmcache.payloaddumper.BuildConfig
+import com.rhythmcache.payloaddumper.R
 import kotlinx.coroutines.launch
 
 data class HistoryItem(val url: String, val title: String, val timestamp: Long)
@@ -122,15 +124,15 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                   IconButton(onClick = { webViewRef[0]?.goBack() }, enabled = canGoBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                   }
 
                   IconButton(onClick = { webViewRef[0]?.goForward() }, enabled = canGoForward) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, "Forward")
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, stringResource(R.string.forward))
                   }
 
                   IconButton(onClick = { webViewRef[0]?.reload() }) {
-                    Icon(Icons.Default.Refresh, "Reload")
+                    Icon(Icons.Default.Refresh, stringResource(R.string.reload))
                   }
 
                   IconButton(
@@ -139,7 +141,7 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                         urlInput = TextFieldValue(currentUrl)
                         webViewRef[0]?.loadUrl(currentUrl)
                       }) {
-                        Icon(Icons.Default.Home, "Home")
+                        Icon(Icons.Default.Home, stringResource(R.string.home))
                       }
 
                   IconButton(
@@ -149,7 +151,9 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                                 if (browserHistory.isNotEmpty()) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.surfaceVariant) {
                               Icon(
-                                  Icons.Default.History, "History", modifier = Modifier.size(20.dp))
+                                  Icons.Default.History,
+                                  stringResource(R.string.history),
+                                  modifier = Modifier.size(20.dp))
                             }
                       }
 
@@ -174,7 +178,7 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                           isUrlFocused = false
                         }
                       },
-                  placeholder = { Text("Search or enter URL") },
+                  placeholder = { Text(stringResource(R.string.search_or_enter_url)) },
                   singleLine = true,
                   shape = RoundedCornerShape(24.dp),
                   colors =
@@ -189,7 +193,7 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                   leadingIcon = {
                     Icon(
                         Icons.Default.Search,
-                        contentDescription = "Search",
+                        contentDescription = stringResource(R.string.search),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant)
                   },
                   trailingIcon = {
@@ -198,13 +202,13 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                         IconButton(onClick = { urlInput = TextFieldValue("") }) {
                           Icon(
                               Icons.Default.Close,
-                              "Clear",
+                              stringResource(R.string.clear),
                               modifier = Modifier.size(18.dp),
                               tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                       }
                       IconButton(onClick = { loadUrl(urlInput.text) }) {
-                        Icon(Icons.AutoMirrored.Filled.Send, "Go")
+                        Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.go))
                       }
                     }
                   })
@@ -309,10 +313,10 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
               contentDescription = null,
               tint = MaterialTheme.colorScheme.primary)
         },
-        title = { Text("Download Detected") },
+        title = { Text(stringResource(R.string.download_detected)) },
         text = {
           Column {
-            Text("Payload file detected:")
+            Text(stringResource(R.string.payload_file_detected))
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 capturedUrl,
@@ -321,7 +325,7 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
             if (capturedCookie != null) {
               Spacer(modifier = Modifier.height(8.dp))
               Text(
-                  "Authentication cookies will be transferred",
+                  stringResource(R.string.auth_cookies_transferred),
                   style = MaterialTheme.typography.bodySmall)
             }
           }
@@ -332,22 +336,26 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                 onDownloadCaptured(capturedUrl, capturedCookie)
                 showDownloadDialog = false
               }) {
-                Text("Open in Dumper")
+                Text(stringResource(R.string.open_in_dumper))
               }
         },
-        dismissButton = { TextButton(onClick = { showDownloadDialog = false }) { Text("Cancel") } })
+        dismissButton = {
+          TextButton(onClick = { showDownloadDialog = false }) {
+            Text(stringResource(R.string.cancel))
+          }
+        })
   }
 
   if (showHistory) {
     AlertDialog(
         onDismissRequest = { showHistory = false },
         icon = { Icon(Icons.Default.History, contentDescription = null) },
-        title = { Text("Browsing History") },
+        title = { Text(stringResource(R.string.browsing_history)) },
         text = {
           Column(modifier = Modifier.fillMaxWidth()) {
             if (browserHistory.isEmpty()) {
               Text(
-                  "No browsing history yet",
+                  stringResource(R.string.no_browsing_history),
                   style = MaterialTheme.typography.bodyMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
@@ -385,7 +393,9 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
             }
           }
         },
-        confirmButton = { TextButton(onClick = { showHistory = false }) { Text("Close") } },
+        confirmButton = {
+          TextButton(onClick = { showHistory = false }) { Text(stringResource(R.string.close)) }
+        },
         dismissButton = {
           if (browserHistory.isNotEmpty()) {
             TextButton(
@@ -393,7 +403,7 @@ fun BrowserScreen(initialUrl: String? = null, onDownloadCaptured: (String, Strin
                   clearHistory()
                   showHistory = false
                 }) {
-                  Text("Clear All", color = MaterialTheme.colorScheme.error)
+                  Text(stringResource(R.string.clear_all), color = MaterialTheme.colorScheme.error)
                 }
           }
         })

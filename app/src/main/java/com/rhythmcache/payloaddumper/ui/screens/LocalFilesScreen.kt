@@ -9,9 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.*
+import com.rhythmcache.payloaddumper.R
 import com.rhythmcache.payloaddumper.state.UiState
 import com.rhythmcache.payloaddumper.ui.screens.components.PartitionsView
 import com.rhythmcache.payloaddumper.ui.screens.components.PermissionCard
@@ -41,7 +43,7 @@ fun LocalFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                   modifier = Modifier.fillMaxWidth(0.6f).height(56.dp)) {
                     Icon(Icons.Default.FolderOpen, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choose File")
+                    Text(stringResource(R.string.choose_file))
                   }
             }
           }
@@ -63,11 +65,13 @@ fun LocalFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center) {
                   Text(
-                      "Error: ${state.message}",
+                      stringResource(R.string.error_prefix, state.message),
                       color = MaterialTheme.colorScheme.error,
                       textAlign = TextAlign.Center)
                   Spacer(modifier = Modifier.height(16.dp))
-                  Button(onClick = { viewModel.resetLocal() }) { Text("Try Again") }
+                  Button(onClick = { viewModel.resetLocal() }) {
+                    Text(stringResource(R.string.try_again))
+                  }
                 }
           }
         }

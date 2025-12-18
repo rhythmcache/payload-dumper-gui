@@ -16,10 +16,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.*
+import com.rhythmcache.payloaddumper.R
 import com.rhythmcache.payloaddumper.state.UiState
 import com.rhythmcache.payloaddumper.ui.screens.components.PartitionsView
 import com.rhythmcache.payloaddumper.ui.screens.components.PermissionCard
@@ -48,7 +50,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
   var isValidating by remember { mutableStateOf(false) }
   var showBrowser by remember { mutableStateOf(false) }
   var browserStartUrl by remember { mutableStateOf<String?>(null) }
-  
+
   var urlFromBrowser by remember { mutableStateOf(false) }
 
   var sessionCookie by remember {
@@ -189,7 +191,6 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
     scope.launch {
       isValidating = true
 
-      
       if (!urlFromBrowser) {
         val isDownload = isDownloadableFile(inputUrl)
 
@@ -201,7 +202,6 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
         }
       }
 
-  
       urlFromBrowser = false
 
       when (val result = detectFileType(inputUrl)) {
@@ -254,19 +254,22 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                                       modifier = Modifier.size(48.dp)) {
                                         Icon(
                                             Icons.Default.Language,
-                                            contentDescription = "Open Browser",
+                                            contentDescription =
+                                                stringResource(R.string.open_browser),
                                             tint = MaterialTheme.colorScheme.primary)
                                       }
 
                                   OutlinedTextField(
                                       value = inputUrl,
-                                      onValueChange = { 
+                                      onValueChange = {
                                         inputUrl = it
-                                        
+
                                         urlFromBrowser = false
                                       },
-                                      label = { Text("File URL") },
-                                      placeholder = { Text("https://example.com/payload.zip") },
+                                      label = { Text(stringResource(R.string.file_url)) },
+                                      placeholder = {
+                                        Text(stringResource(R.string.file_url_placeholder))
+                                      },
                                       modifier = Modifier.weight(1f),
                                       singleLine = true,
                                       shape = RoundedCornerShape(12.dp))
@@ -276,7 +279,8 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                                       modifier = Modifier.size(48.dp)) {
                                         Icon(
                                             Icons.Default.MoreVert,
-                                            contentDescription = "Cookie Settings",
+                                            contentDescription =
+                                                stringResource(R.string.cookie_settings),
                                             tint =
                                                 if (sessionCookie.isNotEmpty())
                                                     MaterialTheme.colorScheme.primary
@@ -286,7 +290,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
 
                             if (sessionCookie.isNotEmpty()) {
                               Text(
-                                  "Cookie configured for this session",
+                                  stringResource(R.string.cookie_configured),
                                   style = MaterialTheme.typography.bodySmall,
                                   color = MaterialTheme.colorScheme.primary,
                                   modifier = Modifier.padding(top = 4.dp))
@@ -305,16 +309,16 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                                         color = MaterialTheme.colorScheme.onPrimary,
                                         strokeWidth = 2.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Validating URL...")
+                                    Text(stringResource(R.string.validating_url))
                                   } else {
-                                    Text("Load Partitions")
+                                    Text(stringResource(R.string.load_partitions))
                                   }
                                 }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                "URL could be a direct download or a webpage",
+                                stringResource(R.string.url_help_text),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center)
@@ -328,7 +332,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                           verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             CircularProgressIndicator()
                             Text(
-                                "Loading partitions...",
+                                stringResource(R.string.loading_partitions),
                                 style = MaterialTheme.typography.bodyMedium)
                           }
                     }
@@ -341,7 +345,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                         onLoadDifferent = {
                           viewModel.resetRemote()
                           inputUrl = ""
-                          urlFromBrowser = false 
+                          urlFromBrowser = false
 
                           val shouldPersist = prefs.getBoolean("persist_cookie", false)
                           if (!shouldPersist) {
@@ -357,7 +361,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center) {
                           Text(
-                              "Error: ${state.message}",
+                              stringResource(R.string.error_prefix, state.message),
                               color = MaterialTheme.colorScheme.error,
                               textAlign = TextAlign.Center)
                           Spacer(modifier = Modifier.height(16.dp))
@@ -365,9 +369,9 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                               onClick = {
                                 viewModel.resetRemote()
                                 inputUrl = ""
-                                urlFromBrowser = false 
+                                urlFromBrowser = false
                               }) {
-                                Text("Try Again")
+                                Text(stringResource(R.string.try_again))
                               }
                         }
                   }
@@ -395,17 +399,17 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                               IconButton(onClick = { showBrowser = false }) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back to Remote Files",
+                                    contentDescription = stringResource(R.string.back_to_remote),
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer)
                               }
                               Column {
                                 Text(
-                                    "Browser",
+                                    stringResource(R.string.browser),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer)
                                 Text(
-                                    "Find and download payload files",
+                                    stringResource(R.string.find_download_payload),
                                     style = MaterialTheme.typography.bodySmall,
                                     color =
                                         MaterialTheme.colorScheme.onPrimaryContainer.copy(
@@ -420,7 +424,7 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                 onDownloadCaptured = { url, cookie ->
                   inputUrl = url
                   urlFromBrowser = true
-                  
+
                   if (cookie != null && cookie.isNotEmpty()) {
                     sessionCookie = cookie
                     if (prefs.getBoolean("persist_cookie", false)) {
@@ -482,7 +486,7 @@ private fun CookieDialog(
     if (cookie.isEmpty()) return true
 
     if (cookie.contains("Set-Cookie", ignoreCase = true)) {
-      errorMessage = "Invalid format. Please paste Cookie header value, not Set-Cookie header."
+      errorMessage = context.resources.getString(R.string.cookie_error_set_cookie)
       showError = true
       return false
     }
@@ -490,7 +494,7 @@ private fun CookieDialog(
     if (cookie.contains("HTTP/", ignoreCase = true) ||
         cookie.contains("\n") ||
         cookie.contains("\r")) {
-      errorMessage = "Invalid format. Please paste only the cookie values (key=value; key2=value2)."
+      errorMessage = context.resources.getString(R.string.cookie_error_invalid)
       showError = true
       return false
     }
@@ -498,14 +502,13 @@ private fun CookieDialog(
     showError = false
     return true
   }
-
   AlertDialog(
       onDismissRequest = onDismiss,
-      title = { Text("Session Cookie") },
+      title = { Text(stringResource(R.string.session_cookie)) },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           Text(
-              "Enter cookie value for authenticated requests (Cookie header format only)",
+              stringResource(R.string.cookie_help_text),
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -515,8 +518,8 @@ private fun CookieDialog(
                 tempCookie = it
                 showError = false
               },
-              label = { Text("Cookie") },
-              placeholder = { Text("key=value; key2=value2") },
+              label = { Text(stringResource(R.string.cookie)) },
+              placeholder = { Text(stringResource(R.string.cookie_placeholder)) },
               modifier = Modifier.fillMaxWidth(),
               minLines = 3,
               maxLines = 6,
@@ -534,11 +537,11 @@ private fun CookieDialog(
                     modifier = Modifier.padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)) {
                       Text(
-                          "How to get cookies:",
+                          stringResource(R.string.how_to_get_cookies),
                           style = MaterialTheme.typography.bodySmall,
                           fontWeight = FontWeight.SemiBold)
                       Text(
-                          "1. Open browser DevTools (F12)\n2. Go to Network tab\n3. Click any request\n4. Copy 'Cookie' header value",
+                          stringResource(R.string.cookie_instructions),
                           style = MaterialTheme.typography.bodySmall,
                           color = MaterialTheme.colorScheme.onSecondaryContainer)
                     }
@@ -552,12 +555,12 @@ private fun CookieDialog(
               verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                   Text(
-                      "Persist cookie",
+                      stringResource(R.string.persist_cookie),
                       style = MaterialTheme.typography.bodyMedium,
                       fontWeight = FontWeight.Medium)
                   Text(
-                      if (persistCookie) "Saved across app restarts"
-                      else "Cleared when loading different payload",
+                      if (persistCookie) stringResource(R.string.persist_cookie_on)
+                      else stringResource(R.string.persist_cookie_off),
                       style = MaterialTheme.typography.bodySmall,
                       color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -572,16 +575,18 @@ private fun CookieDialog(
                 onSave(tempCookie, persistCookie)
               }
             }) {
-              Text("Save")
+              Text(stringResource(R.string.save))
             }
       },
       dismissButton = {
         Row {
           if (currentCookie.isNotEmpty()) {
-            TextButton(onClick = onClear) { Text("Clear", color = MaterialTheme.colorScheme.error) }
+            TextButton(onClick = onClear) {
+              Text(stringResource(R.string.clear), color = MaterialTheme.colorScheme.error)
+            }
             Spacer(modifier = Modifier.width(8.dp))
           }
-          TextButton(onClick = onDismiss) { Text("Cancel") }
+          TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
       })
 }

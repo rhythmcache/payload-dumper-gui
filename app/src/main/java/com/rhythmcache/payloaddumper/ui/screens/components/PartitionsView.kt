@@ -14,9 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.BuildConfig
+import com.rhythmcache.payloaddumper.R
 import com.rhythmcache.payloaddumper.state.UiState
 import com.rhythmcache.payloaddumper.viewmodel.PayloadViewModel
 import java.io.File
@@ -154,7 +156,8 @@ fun PartitionsView(
 
     if (searchQuery.isNotBlank()) {
       Text(
-          "Showing ${filteredPartitions.size} of ${state.partitionStates.size} partitions",
+          stringResource(
+              R.string.showing_filtered, filteredPartitions.size, state.partitionStates.size),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(bottom = 8.dp))
@@ -192,12 +195,15 @@ private fun PartitionsHeader(
         Column(modifier = Modifier.weight(1f)) {
           state.payloadInfo.security_patch_level?.let { patch ->
             Text(
-                "Security Patch: $patch",
+                stringResource(R.string.security_patch, patch),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary)
           }
           Text(
-              "${state.payloadInfo.total_partitions} partitions | ${state.payloadInfo.total_size_readable}",
+              stringResource(
+                  R.string.partitions_size,
+                  state.payloadInfo.total_partitions,
+                  state.payloadInfo.total_size_readable),
               style = MaterialTheme.typography.bodyMedium)
         }
 
@@ -205,15 +211,21 @@ private fun PartitionsHeader(
           IconButton(onClick = onToggleSearch) {
             Icon(
                 if (showSearchBar) Icons.Default.Close else Icons.Default.Search,
-                contentDescription = if (showSearchBar) "Close Search" else "Search Partitions")
+                contentDescription =
+                    if (showSearchBar) stringResource(R.string.close_search)
+                    else stringResource(R.string.search_partitions))
           }
 
           IconButton(onClick = onViewJson) {
-            Icon(Icons.Default.DataObject, contentDescription = "View Raw JSON")
+            Icon(
+                Icons.Default.DataObject,
+                contentDescription = stringResource(R.string.view_raw_json))
           }
 
           IconButton(onClick = onLoadDifferent) {
-            Icon(Icons.Default.SwapHoriz, contentDescription = "Load Different Payload")
+            Icon(
+                Icons.Default.SwapHoriz,
+                contentDescription = stringResource(R.string.load_different_payload))
           }
         }
       }
@@ -225,12 +237,12 @@ private fun SearchBar(searchQuery: String, onSearchQueryChange: (String) -> Unit
       value = searchQuery,
       onValueChange = onSearchQueryChange,
       modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-      placeholder = { Text("Search partitions...") },
+      placeholder = { Text(stringResource(R.string.search_partitions_placeholder)) },
       leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
       trailingIcon = {
         if (searchQuery.isNotEmpty()) {
           IconButton(onClick = { onSearchQueryChange("") }) {
-            Icon(Icons.Default.Close, contentDescription = "Clear")
+            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
           }
         }
       },
@@ -264,10 +276,10 @@ private fun SelectionToolbar(
                   Icon(
                       if (allSelected) Icons.Default.CheckBox
                       else Icons.Default.CheckBoxOutlineBlank,
-                      contentDescription = "Select All")
+                      contentDescription = stringResource(R.string.select_all))
                 }
                 Text(
-                    "$selectedCount selected",
+                    stringResource(R.string.selected_count, selectedCount),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold)
               }
@@ -276,11 +288,11 @@ private fun SelectionToolbar(
                 Button(onClick = onExtractSelected, enabled = selectedCount > 0) {
                   Icon(Icons.Default.SaveAlt, contentDescription = null)
                   Spacer(modifier = Modifier.width(4.dp))
-                  Text("Extract")
+                  Text(stringResource(R.string.extract))
                 }
 
                 IconButton(onClick = onCancel) {
-                  Icon(Icons.Default.Close, contentDescription = "Cancel")
+                  Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel))
                 }
               }
             }
