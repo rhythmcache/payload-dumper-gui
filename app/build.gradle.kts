@@ -49,7 +49,7 @@ android {
 
   defaultConfig {
     applicationId = "com.rhythmcache.payloaddumper"
-    minSdk = 23
+    minSdk = 24
     targetSdk = 36
     versionCode = versionMajor * 10000 + versionMinor * 100 + versionPatch
     versionName = "$versionMajor.$versionMinor.$versionPatch"
@@ -58,6 +58,10 @@ android {
     buildConfigField("String", "GITHUB_URL", "\"https://github.com/rhythmcache\"")
     buildConfigField("String", "TELEGRAM_URL", "\"https://t.me/rhythmcache\"")
     buildConfigField("String", "REPO_URL", "\"https://github.com/rhythmcache/payload-dumper-gui\"")
+    buildConfigField(
+        "String",
+        "GITHUB_API_URL",
+        "\"https://api.github.com/repos/rhythmcache/payload-dumper-gui/releases/latest\"")
   }
 
   splits {

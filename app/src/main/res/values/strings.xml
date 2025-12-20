@@ -11,13 +11,44 @@
     
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
-    <string name="save">Save</string>
-    <string name="ok">OK</string>
     <string name="done">Done</string>
     <string name="clear">Clear</string>
     <string name="try_again">Try Again</string>
     <string name="extract">Extract</string>
     <string name="search">Search</string>
+    
+    <!-- About Section -->
+    <string name="about">About</string>
+    
+    <!-- Update Check -->
+    <string name="check_for_updates">Check for Updates</string>
+    <string name="current_version_format">Version %s</string>
+    <string name="check_updates_description">Check if a new version is available</string>
+    <string name="checking_for_updates">Checking for Updates</string>
+    <string name="please_wait">Please wait…</string>
+    
+    <!-- Update Available -->
+    <string name="update_available">Update Available</string>
+    <string name="new_version">New Version</string>
+    <string name="current_version_label">Current: v%s</string>
+    <string name="whats_new">What\'s New</string>
+    <string name="download">Download</string>
+    <string name="later">Later</string>
+    
+    <!-- Up to Date -->
+    <string name="up_to_date">You\'re Up to Date</string>
+    <string name="running_latest_version">You\'re running the latest version (v%s)</string>
+    
+    <!-- Error -->
+    <string name="update_check_failed">Update Check Failed</string>
+    <string name="update_check_error_message">Unable to check for updates at this time.</string>
+    <string name="check_internet_connection">Please check your internet connection and try again.</string>
+    <string name="retry">Retry</string>
+    <string name="view_releases">View Releases</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="save">Save</string>
     
     
     <string name="choose_file">Choose File</string>

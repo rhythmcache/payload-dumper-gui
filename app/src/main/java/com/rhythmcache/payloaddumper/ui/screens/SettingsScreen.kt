@@ -33,7 +33,12 @@ import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.BuildConfig
 import com.rhythmcache.payloaddumper.FilePickerDialog
 import com.rhythmcache.payloaddumper.R
+import com.rhythmcache.payloaddumper.ui.screens.components.CheckingUpdateDialog
+import com.rhythmcache.payloaddumper.ui.screens.components.UpdateCheckDialog
+import com.rhythmcache.payloaddumper.ui.screens.components.UpdateErrorDialog
 import com.rhythmcache.payloaddumper.utils.LocaleManager
+import com.rhythmcache.payloaddumper.utils.UpdateChecker
+import com.rhythmcache.payloaddumper.utils.UpdateInfo
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -71,6 +76,32 @@ fun SettingsScreen() {
   var showUserAgentDialog by remember { mutableStateOf(false) }
   var showClearDataDialog by remember { mutableStateOf(false) }
   var showLanguageDialog by remember { mutableStateOf(false) }
+
+  // Update check states
+  var showUpdateCheck by remember { mutableStateOf(false) }
+  var isCheckingUpdate by remember { mutableStateOf(false) }
+  var updateInfo: UpdateInfo? by remember { mutableStateOf(null) }
+  var updateCheckError by remember { mutableStateOf(false) }
+
+  fun checkForUpdates() {
+    isCheckingUpdate = true
+    updateCheckError = false
+    scope.launch {
+      // Pass BuildConfig.VERSION_NAME for semantic version comparison
+      val result =
+          UpdateChecker.checkForUpdate(
+              context = context,
+              currentVersionCode = BuildConfig.VERSION_CODE,
+              currentVersionName = BuildConfig.VERSION_NAME)
+      isCheckingUpdate = false
+      if (result != null) {
+        updateInfo = result
+        showUpdateCheck = true
+      } else {
+        updateCheckError = true
+      }
+    }
+  }
 
   Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
     Column(
@@ -177,6 +208,19 @@ fun SettingsScreen() {
                 onClick = { showThreadDialog = true },
                 containerColor = MaterialTheme.colorScheme.secondaryContainer)
           }
+
+          HorizontalDivider()
+          Text(
+              stringResource(R.string.about),
+              style = MaterialTheme.typography.titleMedium,
+              fontWeight = FontWeight.SemiBold)
+
+          SettingCard(
+              title = stringResource(R.string.check_for_updates),
+              subtitle = stringResource(R.string.current_version_format, BuildConfig.VERSION_NAME),
+              description = stringResource(R.string.check_updates_description),
+              icon = Icons.Default.SystemUpdate,
+              onClick = { checkForUpdates() })
 
           Spacer(modifier = Modifier.weight(1f))
           HorizontalDivider()
@@ -292,6 +336,24 @@ fun SettingsScreen() {
             Text(stringResource(R.string.cancel))
           }
         })
+  }
+
+  // Update check dialogs
+  if (isCheckingUpdate) {
+    CheckingUpdateDialog(onDismiss = { isCheckingUpdate = false })
+  }
+
+  if (showUpdateCheck && updateInfo != null) {
+    UpdateCheckDialog(
+        onDismiss = {
+          showUpdateCheck = false
+          updateInfo = null
+        },
+        updateInfo = updateInfo)
+  }
+
+  if (updateCheckError) {
+    UpdateErrorDialog(onDismiss = { updateCheckError = false }, onRetry = { checkForUpdates() })
   }
 }
 

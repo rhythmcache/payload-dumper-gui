@@ -7,11 +7,7 @@
     <string name="nav_remote">रिमोट</string>
     <string name="nav_settings">सेटिंग्स</string>
 
-    <string name="cancel">रद्द करें</string>
     <string name="close">बंद करें</string>
-    <string name="save">सेव करें</string>
-    <string name="ok">ठीक है</string>
-    <string name="done">हो गया</string>
     <string name="clear">हटाएँ</string>
     <string name="try_again">दोबारा कोशिश करें</string>
     <string name="extract">एक्सट्रैक्ट करें</string>
@@ -47,6 +43,8 @@
     <string name="browser">ब्राउज़र</string>
     <string name="find_download_payload">Payload फ़ाइल खोजें और डाउनलोड करें</string>
     <string name="back_to_remote">रिमोट फ़ाइल्स पर वापस जाएँ</string>
+
+
 
     <string name="session_cookie">सेशन कुकी</string>
     <string name="cookie_help_text">ऑथेंटिकेशन के लिए कुकी वैल्यू डालें (सिर्फ Cookie हेडर फ़ॉर्मेट)</string>
@@ -86,6 +84,41 @@
     <string name="version_prefix">v</string>
     <string name="language_label">भाषा</string>
     <string name="language_description">ऐप की भाषा बदलें</string>
+
+    <!-- About Section -->
+    <string name="about">के बारे में</string>
+    
+    <!-- Update Check -->
+    <string name="check_for_updates">अपडेट जांचें</string>
+    <string name="current_version_format">संस्करण %s</string>
+    <string name="check_updates_description">जांचें कि नया संस्करण उपलब्ध है या नहीं</string>
+    <string name="checking_for_updates">अपडेट जांचा जा रहा है</string>
+    <string name="please_wait">कृपया प्रतीक्षा करें…</string>
+    
+    <!-- Update Available -->
+    <string name="update_available">अपडेट उपलब्ध है</string>
+    <string name="new_version">नया संस्करण</string>
+    <string name="current_version_label">वर्तमान: v%s</string>
+    <string name="whats_new">नया क्या है</string>
+    <string name="download">डाउनलोड करें</string>
+    <string name="later">बाद में</string>
+    
+    <!-- Up to Date -->
+    <string name="up_to_date">आप अपडेट हैं</string>
+    <string name="running_latest_version">आप नवीनतम संस्करण (v%s) चला रहे हैं</string>
+    
+    <!-- Error -->
+    <string name="update_check_failed">अपडेट जांच विफल</string>
+    <string name="update_check_error_message">इस समय अपडेट की जांच करने में असमर्थ।</string>
+    <string name="check_internet_connection">कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।</string>
+    <string name="retry">पुनः प्रयास करें</string>
+    <string name="view_releases">रिलीज़ देखें</string>
+    
+    <!-- Common -->
+    <string name="ok">ठीक है</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="done">हो गया</string>
+    <string name="save">सहेजें</string>
 
     <string name="clear_browser_data_title">ब्राउज़र डेटा साफ करें</string>
     <string name="clear_browser_data_message">यह ब्राउज़र की सभी कुकी, कैश और हिस्ट्री को हमेशा के लिए हटा देगा। यह वापस नहीं किया जा सकता।\n\nजारी रखें?</string>

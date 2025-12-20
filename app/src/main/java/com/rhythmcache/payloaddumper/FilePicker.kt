@@ -99,33 +99,94 @@ fun FilePickerDialog(
             })
 
         if (storageLocations.size > 1) {
-          Surface(
-              modifier = Modifier.fillMaxWidth().clickable { showStorageMenu = true },
-              color = MaterialTheme.colorScheme.secondaryContainer,
-              tonalElevation = 2.dp) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween) {
-                      Row(
-                          verticalAlignment = Alignment.CenterVertically,
-                          horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(
-                                if (selectedStorage.isRemovable) Icons.Default.SdCard
-                                else Icons.Default.PhoneAndroid,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                            Text(
-                                selectedStorage.name,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer)
+          Column(modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().clickable { showStorageMenu = !showStorageMenu },
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                tonalElevation = 2.dp) {
+                  Row(
+                      modifier = Modifier.padding(12.dp),
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                              Icon(
+                                  if (selectedStorage.isRemovable) Icons.Default.SdCard
+                                  else Icons.Default.PhoneAndroid,
+                                  contentDescription = null,
+                                  tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                              Text(
+                                  selectedStorage.name,
+                                  style = MaterialTheme.typography.bodyMedium,
+                                  color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            }
+                        Icon(
+                            if (showStorageMenu) Icons.Default.ArrowDropUp
+                            else Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                      }
+                }
+            androidx.compose.animation.AnimatedVisibility(visible = showStorageMenu) {
+              Column(
+                  modifier = Modifier.fillMaxWidth().padding(8.dp),
+                  verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    storageLocations.forEach { location ->
+                      Card(
+                          modifier =
+                              Modifier.fillMaxWidth().clickable {
+                                selectedStorage = location
+                                currentPath = location.path
+                                showStorageMenu = false
+                              },
+                          colors =
+                              CardDefaults.cardColors(
+                                  containerColor =
+                                      if (location == selectedStorage)
+                                          MaterialTheme.colorScheme.primaryContainer
+                                      else MaterialTheme.colorScheme.surface)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                  Icon(
+                                      if (location.isRemovable) Icons.Default.SdCard
+                                      else Icons.Default.PhoneAndroid,
+                                      contentDescription = null,
+                                      tint =
+                                          if (location == selectedStorage)
+                                              MaterialTheme.colorScheme.onPrimaryContainer
+                                          else MaterialTheme.colorScheme.onSurfaceVariant)
+                                  Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        location.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color =
+                                            if (location == selectedStorage)
+                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                            else MaterialTheme.colorScheme.onSurface)
+                                    Text(
+                                        location.path,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color =
+                                            if (location == selectedStorage)
+                                                MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                                    alpha = 0.7f)
+                                            else MaterialTheme.colorScheme.onSurfaceVariant)
+                                  }
+                                  if (location == selectedStorage) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                  }
+                                }
                           }
-                      Icon(
-                          Icons.Default.ArrowDropDown,
-                          contentDescription = null,
-                          tint = MaterialTheme.colorScheme.onSecondaryContainer)
                     }
-              }
+                  }
+            }
+          }
         }
 
         Text(
@@ -161,72 +222,6 @@ fun FilePickerDialog(
         }
       }
     }
-  }
-
-  if (showStorageMenu) {
-    AlertDialog(
-        onDismissRequest = { showStorageMenu = false },
-        icon = { Icon(Icons.Default.Storage, contentDescription = null) },
-        title = { Text(stringResource(R.string.select_storage)) },
-        text = {
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            storageLocations.forEach { location ->
-              Card(
-                  modifier =
-                      Modifier.fillMaxWidth().clickable {
-                        selectedStorage = location
-                        currentPath = location.path
-                        showStorageMenu = false
-                      },
-                  colors =
-                      CardDefaults.cardColors(
-                          containerColor =
-                              if (location == selectedStorage)
-                                  MaterialTheme.colorScheme.primaryContainer
-                              else MaterialTheme.colorScheme.surfaceVariant)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                          Icon(
-                              if (location.isRemovable) Icons.Default.SdCard
-                              else Icons.Default.PhoneAndroid,
-                              contentDescription = null,
-                              tint =
-                                  if (location == selectedStorage)
-                                      MaterialTheme.colorScheme.onPrimaryContainer
-                                  else MaterialTheme.colorScheme.onSurfaceVariant)
-                          Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                location.name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color =
-                                    if (location == selectedStorage)
-                                        MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSurface)
-                            Text(
-                                location.path,
-                                style = MaterialTheme.typography.bodySmall,
-                                color =
-                                    if (location == selectedStorage)
-                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                                            alpha = 0.7f)
-                                    else MaterialTheme.colorScheme.onSurfaceVariant)
-                          }
-                          if (location == selectedStorage) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                          }
-                        }
-                  }
-            }
-          }
-        },
-        confirmButton = {
-          TextButton(onClick = { showStorageMenu = false }) { Text(stringResource(R.string.close)) }
-        })
   }
 }
 
