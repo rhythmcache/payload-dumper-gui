@@ -59,6 +59,8 @@ jobs:
         run: |
           cd ..
           git clone https://github.com/rhythmcache/payload-dumper-rust.git
+          cd payload-dumper-rust
+          git checkout 48798601100409ed54a00e81794eb771d22d9c6a
 
       - name: Patch Cargo.toml
         shell: bash
