@@ -1,0 +1,8 @@
+Initial release
+
+- Extract payload.bin and OTA ZIP files
+- Extract specific partitions from remote HTTP URLs
+- Multiple partition extraction support
+- SHA-256 checksum verification
+- Cancel running extractions
+- Concurrent extraction limit control

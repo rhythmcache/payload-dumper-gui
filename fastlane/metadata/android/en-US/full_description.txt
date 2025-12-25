@@ -1,0 +1,19 @@
+Windows and Android app to extract Android OTA payloads from local files or HTTP URLs.
+
+<b>Features</b>
+
+- Supports <b>payload.bin</b> and <b>OTA ZIP</b> files
+- Extract <b>specific partitions directly from remote HTTP OTA URLs</b> without downloading the full OTA
+- Extract multiple partitions simultaneously
+- Cancel running extractions
+- Optional limit on concurrent extractions to control CPU and I/O usage
+- <b>SHA-256</b> checksum verification for extracted partitions
+
+<b>Limitations</b>
+
+- Multi-extent OTAs and differential OTAs are not supported
+- The remote server must support HTTP Range requests for extraction from URLs
+
+<b>Open Source</b>
+
+This project is open source under the Apache-2.0 license. Contributions and feedback are welcome!
