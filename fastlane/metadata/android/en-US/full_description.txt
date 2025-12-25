@@ -1,4 +1,4 @@
-Windows and Android app to extract Android OTA payloads from local files or HTTP URLs.
+Android* app to extract Android OTA payloads from local files or HTTP URLs.
 
 <b>Features</b>
 
