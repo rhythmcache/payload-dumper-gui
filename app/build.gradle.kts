@@ -35,6 +35,11 @@ android {
   namespace = "com.rhythmcache.payloaddumper"
   compileSdk = 36
 
+  dependenciesInfo {
+    includeInApk = false
+    includeInBundle = false
+  }
+
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH")
