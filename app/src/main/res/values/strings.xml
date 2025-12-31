@@ -151,7 +151,7 @@
     <string name="version_prefix">v</string>
     <string name="check_for_updates">Check for Updates</string>
     <string name="current_version_format">Version %s</string>
-    <string name="check_updates_description">Check if a new version is available</string>
+    <string name="check_updates_description"> Check if a new version is available. Updates are checked on GitHub. Downloading from there directly bypasses the additional screening performed by IzzyOnDroid. </string> 
     <string name="checking_for_updates">Checking for Updates</string>
     <string name="please_wait">Please wait…</string>
     <string name="update_available">Update Available</string>
