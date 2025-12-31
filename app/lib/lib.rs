@@ -12,18 +12,113 @@ use payload_dumper_core::extractor::remote::{
 use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 
-/// java str to rs str
+/* Utility Functions */
+
+/// convert Java string to Rust string
 fn jstring_to_string(env: &mut JNIEnv, jstr: &JString) -> Result<String, String> {
     env.get_string(jstr)
         .map(|s| s.into())
         .map_err(|e| format!("Failed to convert Java string: {}", e))
 }
 
-/// rs str to java stri (returns owned jstring)
+/// convert Rust string to Java string (returns owned jstring)
 fn string_to_jstring_owned(env: &mut JNIEnv, s: String) -> Result<jstring, String> {
     env.new_string(s)
         .map(|jstr| jstr.into_raw())
         .map_err(|e| format!("Failed to create Java string: {}", e))
+}
+
+/// Convert optional JString to Option<String>
+fn optional_jstring_to_string(env: &mut JNIEnv, jstr: &JString) -> Result<Option<String>, String> {
+    if jstr.is_null() {
+        Ok(None)
+    } else {
+        jstring_to_string(env, jstr).map(Some)
+    }
+}
+
+/// Generic wrapper for listing operations that return JSON strings
+fn handle_list_operation<F>(mut env: JNIEnv, operation: F) -> jstring
+where
+    F: FnOnce(&mut JNIEnv) -> Result<String, String>,
+{
+    let result = std::panic::catch_unwind(AssertUnwindSafe(|| operation(&mut env)));
+
+    match result {
+        Ok(Ok(json)) => match string_to_jstring_owned(&mut env, json) {
+            Ok(jstr) => jstr,
+            Err(e) => {
+                let _ = env.throw_new("java/lang/RuntimeException", e);
+                JObject::null().into_raw()
+            }
+        },
+        Ok(Err(e)) => {
+            let _ = env.throw_new("java/lang/RuntimeException", e);
+            JObject::null().into_raw()
+        }
+        Err(_) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                "Panic occurred in native code",
+            );
+            JObject::null().into_raw()
+        }
+    }
+}
+
+/// Generic wrapper for extraction operations that return ()
+fn handle_extraction_operation<F>(mut env: JNIEnv, operation: F)
+where
+    F: FnOnce(&mut JNIEnv) -> Result<(), String>,
+{
+    let result = std::panic::catch_unwind(AssertUnwindSafe(|| operation(&mut env)));
+
+    match result {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => {
+            let _ = env.throw_new("java/lang/RuntimeException", e);
+        }
+        Err(_) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                "Panic occurred in native code",
+            );
+        }
+    }
+}
+
+/// Create a progress callback from a Java callback object
+fn create_progress_callback(
+    env: &mut JNIEnv,
+    callback: &JObject,
+) -> Result<Option<ProgressCallback>, String> {
+    if callback.is_null() {
+        return Ok(None);
+    }
+
+    let callback_ref = env
+        .new_global_ref(callback)
+        .map_err(|e| format!("Failed to create global ref: {}", e))?;
+
+    let jvm = env
+        .get_java_vm()
+        .map_err(|e| format!("Failed to get JavaVM: {}", e))?;
+
+    let callback_ref = Arc::new(callback_ref);
+
+    Ok(Some(Box::new(
+        move |progress: ExtractionProgress| -> bool {
+            let mut env = match jvm.attach_current_thread() {
+                Ok(env) => env,
+                Err(_) => return false,
+            };
+
+            match call_java_progress_callback(&mut env, callback_ref.as_obj(), progress) {
+                Ok(should_continue) => should_continue,
+                Err(_) => false,
+            }
+        },
+    )))
 }
 
 fn call_java_progress_callback(
@@ -31,7 +126,6 @@ fn call_java_progress_callback(
     callback: &JObject,
     progress: ExtractionProgress,
 ) -> Result<bool, String> {
-    // push a local frame to automatically clean up local references
     env.push_local_frame(16)
         .map_err(|e| format!("Failed to push local frame: {}", e))?;
 
@@ -40,16 +134,7 @@ fn call_java_progress_callback(
             .new_string(&progress.partition_name)
             .map_err(|e| format!("Failed to create partition name string: {}", e))?;
 
-        // check for pending exception after new_string
-        if env
-            .exception_check()
-            .map_err(|e| format!("Failed to check exception: {}", e))?
-        {
-            let _ = env.exception_describe();
-            env.exception_clear()
-                .map_err(|e| format!("Failed to clear exception: {}", e))?;
-            return Err("Exception occurred while creating partition name".to_string());
-        }
+        check_and_clear_exception(env, "creating partition name")?;
 
         let status_value = match progress.status {
             ExtractionStatus::Started => 0,
@@ -67,16 +152,7 @@ fn call_java_progress_callback(
                     .new_string(&message)
                     .map_err(|e| format!("Failed to create warning message: {}", e))?;
 
-                if env
-                    .exception_check()
-                    .map_err(|e| format!("Failed to check exception: {}", e))?
-                {
-                    let _ = env.exception_describe();
-                    env.exception_clear()
-                        .map_err(|e| format!("Failed to clear exception: {}", e))?;
-                    return Err("Exception occurred while creating warning message".to_string());
-                }
-
+                check_and_clear_exception(env, "creating warning message")?;
                 (operation_index as i32, msg)
             }
             _ => {
@@ -84,16 +160,7 @@ fn call_java_progress_callback(
                     .new_string("")
                     .map_err(|e| format!("Failed to create empty string: {}", e))?;
 
-                if env
-                    .exception_check()
-                    .map_err(|e| format!("Failed to check exception: {}", e))?
-                {
-                    let _ = env.exception_describe();
-                    env.exception_clear()
-                        .map_err(|e| format!("Failed to clear exception: {}", e))?;
-                    return Err("Exception occurred while creating empty string".to_string());
-                }
-
+                check_and_clear_exception(env, "creating empty string")?;
                 (0, empty)
             }
         };
@@ -115,376 +182,148 @@ fn call_java_progress_callback(
             )
             .map_err(|e| format!("Failed to call progress callback: {}", e))?;
 
-        // check for exception after method call
-        if env
-            .exception_check()
-            .map_err(|e| format!("Failed to check exception: {}", e))?
-        {
-            let _ = env.exception_describe();
-            env.exception_clear()
-                .map_err(|e| format!("Failed to clear exception: {}", e))?;
-            return Err("Exception occurred in Java callback".to_string());
-        }
+        check_and_clear_exception(env, "Java callback")?;
 
-        let should_continue = call_result
+        call_result
             .z()
-            .map_err(|e| format!("Failed to extract boolean from callback result: {}", e))?;
-
-        Ok(should_continue)
+            .map_err(|e| format!("Failed to extract boolean from callback result: {}", e))
     })();
 
-    let null_obj = JObject::null();
-    let _ = unsafe { env.pop_local_frame(&null_obj) };
-
+    let _ = unsafe { env.pop_local_frame(&JObject::null()) };
     result
 }
 
-/* local Operations -> List Partitions */
+/// Helper to check and clear JNI exceptions
+fn check_and_clear_exception(env: &mut JNIEnv, context: &str) -> Result<(), String> {
+    if env
+        .exception_check()
+        .map_err(|e| format!("Failed to check exception: {}", e))?
+    {
+        let _ = env.exception_describe();
+        env.exception_clear()
+            .map_err(|e| format!("Failed to clear exception: {}", e))?;
+        return Err(format!("Exception occurred while {}", context));
+    }
+    Ok(())
+}
 
-/// list partitions in a local payload.bin file
-///
-/// public static native String listPartitions(String payloadPath);
+/* List Partitions */
+
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_listPartitions(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     payload_path: JString,
 ) -> jstring {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
-        let path = jstring_to_string(&mut env, &payload_path)?;
+    handle_list_operation(env, |env| {
+        let path = jstring_to_string(env, &payload_path)?;
         list_partitions(path).map_err(|e| format!("Failed to list partitions: {}", e))
-    }));
-
-    match result {
-        Ok(Ok(json)) => match string_to_jstring_owned(&mut env, json) {
-            Ok(jstr) => jstr,
-            Err(e) => {
-                let _ = env.throw_new("java/lang/RuntimeException", e);
-                JObject::null().into_raw()
-            }
-        },
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-            JObject::null().into_raw()
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-            JObject::null().into_raw()
-        }
-    }
+    })
 }
 
-/// list partitions in a local ZIP file containing payload.bin
-///
-/// java signature:
-/// public static native String listPartitionsZip(String zipPath);
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_listPartitionsZip(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     zip_path: JString,
 ) -> jstring {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
-        let path = jstring_to_string(&mut env, &zip_path)?;
+    handle_list_operation(env, |env| {
+        let path = jstring_to_string(env, &zip_path)?;
         list_partitions_zip(path).map_err(|e| format!("Failed to list partitions: {}", e))
-    }));
-
-    match result {
-        Ok(Ok(json)) => match string_to_jstring_owned(&mut env, json) {
-            Ok(jstr) => jstr,
-            Err(e) => {
-                let _ = env.throw_new("java/lang/RuntimeException", e);
-                JObject::null().into_raw()
-            }
-        },
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-            JObject::null().into_raw()
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-            JObject::null().into_raw()
-        }
-    }
+    })
 }
 
-/* local Operations - Extract Partition */
+/* Extract Partition */
 
-/// extract a partition from a local payload.bin file
-/// **BLOCKS until extraction completes** - threading is managed by Kotlin
-///
-/// java signature:
-/// public static native void extractPartition(
-///     String payloadPath,
-///     String partitionName,
-///     String outputPath,
-///     ProgressCallback callback
-/// );
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractPartition(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     payload_path: JString,
     partition_name: JString,
     output_path: JString,
     callback: JObject,
 ) {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
-        let payload = jstring_to_string(&mut env, &payload_path)?;
-        let partition = jstring_to_string(&mut env, &partition_name)?;
-        let output = jstring_to_string(&mut env, &output_path)?;
+    handle_extraction_operation(env, |env| {
+        let payload = jstring_to_string(env, &payload_path)?;
+        let partition = jstring_to_string(env, &partition_name)?;
+        let output = jstring_to_string(env, &output_path)?;
+        let progress_callback = create_progress_callback(env, &callback)?;
 
-        let progress_callback: Option<ProgressCallback> = if !callback.is_null() {
-            // create a global reference to the callback object
-            let callback_ref = env
-                .new_global_ref(&callback)
-                .map_err(|e| format!("Failed to create global ref: {}", e))?;
-
-            // we need to get a javavm reference that we can use across threads
-            let jvm = env
-                .get_java_vm()
-                .map_err(|e| format!("Failed to get JavaVM: {}", e))?;
-
-            let callback_ref = Arc::new(callback_ref);
-
-            Some(Box::new(move |progress: ExtractionProgress| -> bool {
-                let mut env = match jvm.attach_current_thread() {
-                    Ok(env) => env,
-                    Err(_) => return false,
-                };
-
-                match call_java_progress_callback(&mut env, callback_ref.as_obj(), progress) {
-                    Ok(should_continue) => should_continue,
-                    Err(_) => false,
-                }
-            }))
-        } else {
-            None
-        };
         extract_partition(payload, &partition, output, progress_callback)
-            .map_err(|e| format!("Extraction failed: {}", e))?;
-
-        Ok(())
-    }));
-
-    match result {
-        Ok(Ok(())) => {} // extraction completed successfully
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-        }
-    }
+            .map_err(|e| format!("Extraction failed: {}", e))
+    })
 }
 
-/// extract a partition from a local ZIP file containing payload.bin
-/// **BLOCKS until extraction completes** - threading is managed by Kotlin
-///
-/// java signature:
-/// public static native void extractPartitionZip(
-///     String zipPath,
-///     String partitionName,
-///     String outputPath,
-///     ProgressCallback callback
-/// );
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractPartitionZip(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     zip_path: JString,
     partition_name: JString,
     output_path: JString,
     callback: JObject,
 ) {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
-        let zip = jstring_to_string(&mut env, &zip_path)?;
-        let partition = jstring_to_string(&mut env, &partition_name)?;
-        let output = jstring_to_string(&mut env, &output_path)?;
-
-        let progress_callback: Option<ProgressCallback> = if !callback.is_null() {
-            let callback_ref = env
-                .new_global_ref(&callback)
-                .map_err(|e| format!("Failed to create global ref: {}", e))?;
-
-            let jvm = env
-                .get_java_vm()
-                .map_err(|e| format!("Failed to get JavaVM: {}", e))?;
-
-            let callback_ref = Arc::new(callback_ref);
-
-            Some(Box::new(move |progress: ExtractionProgress| -> bool {
-                let mut env = match jvm.attach_current_thread() {
-                    Ok(env) => env,
-                    Err(_) => return false,
-                };
-
-                match call_java_progress_callback(&mut env, callback_ref.as_obj(), progress) {
-                    Ok(should_continue) => should_continue,
-                    Err(_) => false,
-                }
-            }))
-        } else {
-            None
-        };
+    handle_extraction_operation(env, |env| {
+        let zip = jstring_to_string(env, &zip_path)?;
+        let partition = jstring_to_string(env, &partition_name)?;
+        let output = jstring_to_string(env, &output_path)?;
+        let progress_callback = create_progress_callback(env, &callback)?;
 
         extract_partition_zip(zip, &partition, output, progress_callback)
-            .map_err(|e| format!("Extraction failed: {}", e))?;
-
-        Ok(())
-    }));
-
-    match result {
-        Ok(Ok(())) => {}
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-        }
-    }
+            .map_err(|e| format!("Extraction failed: {}", e))
+    })
 }
 
 /* Remote Operations - List Partitions */
 
-/// list partitions in a remote ZIP file containing payload.bin
-///
-/// java signature:
-/// public static native String listPartitionsRemoteZip(String url, String userAgent);
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_listPartitionsRemoteZip(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     url: JString,
     user_agent: JString,
     cookies: JString,
 ) -> jstring {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| -> Result<String, String> {
-        let url_str = jstring_to_string(&mut env, &url)?;
-        let user_agent_str = if !user_agent.is_null() {
-            Some(jstring_to_string(&mut env, &user_agent)?)
-        } else {
-            None
-        };
-
-        let cookies_str = if !cookies.is_null() {
-            Some(jstring_to_string(&mut env, &cookies)?)
-        } else {
-            None
-        };
+    handle_list_operation(env, |env| {
+        let url_str = jstring_to_string(env, &url)?;
+        let user_agent_str = optional_jstring_to_string(env, &user_agent)?;
+        let cookies_str = optional_jstring_to_string(env, &cookies)?;
 
         let result =
             list_partitions_remote_zip(url_str, user_agent_str.as_deref(), cookies_str.as_deref())
                 .map_err(|e| format!("Failed to list remote partitions: {}", e))?;
 
         Ok(result.json)
-    }));
-
-    match result {
-        Ok(Ok(json)) => match string_to_jstring_owned(&mut env, json) {
-            Ok(jstr) => jstr,
-            Err(e) => {
-                let _ = env.throw_new("java/lang/RuntimeException", e);
-                JObject::null().into_raw()
-            }
-        },
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-            JObject::null().into_raw()
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-            JObject::null().into_raw()
-        }
-    }
+    })
 }
 
-/// list partitions in a remote payload.bin file (not in ZIP)
-///
-/// java signature:
-/// public static native String listPartitionsRemoteBin(String url, String userAgent);
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_listPartitionsRemoteBin(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     url: JString,
     user_agent: JString,
     cookies: JString,
 ) -> jstring {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| -> Result<String, String> {
-        let url_str = jstring_to_string(&mut env, &url)?;
-        let user_agent_str = if !user_agent.is_null() {
-            Some(jstring_to_string(&mut env, &user_agent)?)
-        } else {
-            None
-        };
-
-        let cookies_str = if !cookies.is_null() {
-            Some(jstring_to_string(&mut env, &cookies)?)
-        } else {
-            None
-        };
+    handle_list_operation(env, |env| {
+        let url_str = jstring_to_string(env, &url)?;
+        let user_agent_str = optional_jstring_to_string(env, &user_agent)?;
+        let cookies_str = optional_jstring_to_string(env, &cookies)?;
 
         let result =
             list_partitions_remote_bin(url_str, user_agent_str.as_deref(), cookies_str.as_deref())
                 .map_err(|e| format!("Failed to list remote partitions: {}", e))?;
 
         Ok(result.json)
-    }));
-
-    match result {
-        Ok(Ok(json)) => match string_to_jstring_owned(&mut env, json) {
-            Ok(jstr) => jstr,
-            Err(e) => {
-                let _ = env.throw_new("java/lang/RuntimeException", e);
-                JObject::null().into_raw()
-            }
-        },
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-            JObject::null().into_raw()
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-            JObject::null().into_raw()
-        }
-    }
+    })
 }
 
 /* Remote Operations - Extract Partition */
 
-/// extract a partition from a remote ZIP file containing payload.bin
-/// **BLOCKS until extraction completes** - threading is managed by Kotlin
-///
-/// java signature:
-/// public static native void extractPartitionRemoteZip(
-///     String url,
-///     String partitionName,
-///     String outputPath,
-///     String userAgent,
-///     ProgressCallback callback
-/// );
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractPartitionRemoteZip(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     url: JString,
     partition_name: JString,
@@ -493,47 +332,14 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractP
     cookies: JString,
     callback: JObject,
 ) {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
-        let url_str = jstring_to_string(&mut env, &url)?;
-        let partition = jstring_to_string(&mut env, &partition_name)?;
-        let output = jstring_to_string(&mut env, &output_path)?;
-        let user_agent_str = if !user_agent.is_null() {
-            Some(jstring_to_string(&mut env, &user_agent)?)
-        } else {
-            None
-        };
+    handle_extraction_operation(env, |env| {
+        let url_str = jstring_to_string(env, &url)?;
+        let partition = jstring_to_string(env, &partition_name)?;
+        let output = jstring_to_string(env, &output_path)?;
+        let user_agent_str = optional_jstring_to_string(env, &user_agent)?;
+        let cookies_str = optional_jstring_to_string(env, &cookies)?;
+        let progress_callback = create_progress_callback(env, &callback)?;
 
-        let cookies_str = if !cookies.is_null() {
-            Some(jstring_to_string(&mut env, &cookies)?)
-        } else {
-            None
-        };
-
-        let progress_callback: Option<ProgressCallback> = if !callback.is_null() {
-            let callback_ref = env
-                .new_global_ref(&callback)
-                .map_err(|e| format!("Failed to create global ref: {}", e))?;
-
-            let jvm = env
-                .get_java_vm()
-                .map_err(|e| format!("Failed to get JavaVM: {}", e))?;
-
-            let callback_ref = Arc::new(callback_ref);
-
-            Some(Box::new(move |progress: ExtractionProgress| -> bool {
-                let mut env = match jvm.attach_current_thread() {
-                    Ok(env) => env,
-                    Err(_) => return false,
-                };
-
-                match call_java_progress_callback(&mut env, callback_ref.as_obj(), progress) {
-                    Ok(should_continue) => should_continue,
-                    Err(_) => false,
-                }
-            }))
-        } else {
-            None
-        };
         extract_partition_remote_zip(
             url_str,
             &partition,
@@ -542,39 +348,13 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractP
             cookies_str.as_deref(),
             progress_callback,
         )
-        .map_err(|e| format!("Extraction failed: {}", e))?;
-
-        Ok(())
-    }));
-
-    match result {
-        Ok(Ok(())) => {}
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-        }
-    }
+        .map_err(|e| format!("Extraction failed: {}", e))
+    })
 }
 
-/// extract a partition from a remote payload.bin file (not in ZIP)
-/// **BLOCKS until extraction completes** - threading is managed by Kotlin
-///
-/// java signature:
-/// public static native void extractPartitionRemoteBin(
-///     String url,
-///     String partitionName,
-///     String outputPath,
-///     String userAgent,
-///     ProgressCallback callback
-/// );
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractPartitionRemoteBin(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     url: JString,
     partition_name: JString,
@@ -583,47 +363,14 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractP
     cookies: JString,
     callback: JObject,
 ) {
-    let result = std::panic::catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
-        let url_str = jstring_to_string(&mut env, &url)?;
-        let partition = jstring_to_string(&mut env, &partition_name)?;
-        let output = jstring_to_string(&mut env, &output_path)?;
-        let user_agent_str = if !user_agent.is_null() {
-            Some(jstring_to_string(&mut env, &user_agent)?)
-        } else {
-            None
-        };
+    handle_extraction_operation(env, |env| {
+        let url_str = jstring_to_string(env, &url)?;
+        let partition = jstring_to_string(env, &partition_name)?;
+        let output = jstring_to_string(env, &output_path)?;
+        let user_agent_str = optional_jstring_to_string(env, &user_agent)?;
+        let cookies_str = optional_jstring_to_string(env, &cookies)?;
+        let progress_callback = create_progress_callback(env, &callback)?;
 
-        let cookies_str = if !cookies.is_null() {
-            Some(jstring_to_string(&mut env, &cookies)?)
-        } else {
-            None
-        };
-
-        let progress_callback: Option<ProgressCallback> = if !callback.is_null() {
-            let callback_ref = env
-                .new_global_ref(&callback)
-                .map_err(|e| format!("Failed to create global ref: {}", e))?;
-
-            let jvm = env
-                .get_java_vm()
-                .map_err(|e| format!("Failed to get JavaVM: {}", e))?;
-
-            let callback_ref = Arc::new(callback_ref);
-
-            Some(Box::new(move |progress: ExtractionProgress| -> bool {
-                let mut env = match jvm.attach_current_thread() {
-                    Ok(env) => env,
-                    Err(_) => return false,
-                };
-
-                match call_java_progress_callback(&mut env, callback_ref.as_obj(), progress) {
-                    Ok(should_continue) => should_continue,
-                    Err(_) => false,
-                }
-            }))
-        } else {
-            None
-        };
         extract_partition_remote_bin(
             url_str,
             &partition,
@@ -632,21 +379,6 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractP
             cookies_str.as_deref(),
             progress_callback,
         )
-        .map_err(|e| format!("Extraction failed: {}", e))?;
-
-        Ok(())
-    }));
-
-    match result {
-        Ok(Ok(())) => {}
-        Ok(Err(e)) => {
-            let _ = env.throw_new("java/lang/RuntimeException", e);
-        }
-        Err(_) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                "Panic occurred in native code",
-            );
-        }
-    }
+        .map_err(|e| format!("Extraction failed: {}", e))
+    })
 }
