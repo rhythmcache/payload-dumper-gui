@@ -6,6 +6,9 @@ Windows and Android app to extract Android OTA payloads from local files or HTTP
 
 [DOWNLOAD](https://github.com/rhythmcache/payload-dumper-gui/releases)
 
+
+[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroidButtonGreyBorder_nofont.png" height="80" alt="Get it at IzzyOnDroid">](https://apt.izzysoft.de/packages/com.rhythmcache.payloaddumper)
+
 ---
 
 ## Features
