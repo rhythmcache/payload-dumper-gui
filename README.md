@@ -3,8 +3,9 @@
 Windows and Android app to extract Android OTA payloads from local files or HTTP URLs.
 
 
-![logo](./fastlane/metadata/android/en-US/images/icon.png)
-
+<p align="center">
+  <img src="./fastlane/metadata/android/en-US/images/icon.png" width="120" />
+</p>
 
 ---
 
