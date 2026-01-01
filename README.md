@@ -2,10 +2,11 @@
 
 Windows and Android app to extract Android OTA payloads from local files or HTTP URLs.
 
+
+![logo](./fastlane/metadata/android/en-US/images/icon.png)
+
+
 ---
-
-[DOWNLOAD](https://github.com/rhythmcache/payload-dumper-gui/releases)
-
 
 [<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroidButtonGreyBorder_nofont.png" height="80" alt="Get it at IzzyOnDroid">](https://apt.izzysoft.de/packages/com.rhythmcache.payloaddumper)
 
@@ -24,13 +25,12 @@ Windows and Android app to extract Android OTA payloads from local files or HTTP
 ## Screenshots
 ### Android
 
-![Android Screenshot 1](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image1.png)
-
-![Android Screenshot 2](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image2.png)
-
-![Android Screenshot 3](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image3.png)
-
-![Android Screenshot 4](https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image4.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image1.png" width="22%" />
+  <img src="https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image2.png" width="22%" />
+  <img src="https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image3.png" width="22%" />
+  <img src="https://raw.githubusercontent.com/rhythmcache/payload-dumper-gui/main/images/image4.png" width="22%" />
+</p>
 
 ### Windows
 
