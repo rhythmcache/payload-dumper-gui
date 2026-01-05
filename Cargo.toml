@@ -21,11 +21,10 @@ tokio               = { version = "1.49.0", features = ["full"] }
 [build-dependencies]
 cbindgen = "0.29"
 
-
 [features]
 default = []
 jni     = ["dep:jni"]
-capi = []
+capi    = []
 
 [profile.release]
 opt-level       = 3
