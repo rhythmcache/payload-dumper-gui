@@ -33,12 +33,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-sealed class FileDetectionResult {
-  data class Success(val type: SourceType) : FileDetectionResult()
-
-  data class Error(val message: String) : FileDetectionResult()
-}
-
 @Composable
 fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
   val context = LocalContext.current
@@ -139,52 +133,6 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
         }
       }
 
-  suspend fun detectFileType(url: String): FileDetectionResult =
-      withContext(Dispatchers.IO) {
-        try {
-          val connection = URL(url).openConnection() as HttpURLConnection
-          connection.requestMethod = "GET"
-          connection.setRequestProperty("Range", "bytes=0-3")
-          connection.connectTimeout = 5000
-          connection.readTimeout = 5000
-
-          val userAgent =
-              prefs.getString("user_agent", BuildConfig.USER_AGENT) ?: BuildConfig.USER_AGENT
-          connection.setRequestProperty("User-Agent", userAgent)
-          if (sessionCookie.isNotEmpty()) {
-            connection.setRequestProperty("Cookie", sessionCookie)
-          }
-
-          connection.connect()
-          val signature = connection.inputStream.readBytes()
-          connection.disconnect()
-
-          if (signature.size < 4) {
-            return@withContext FileDetectionResult.Error("Unable to read file signature")
-          }
-
-          if (signature[0] == 0x50.toByte() && signature[1] == 0x4B.toByte()) {
-            return@withContext FileDetectionResult.Success(SourceType.REMOTE_ZIP)
-          }
-          if (signature[0] == 0x43.toByte() && // 'C'
-              signature[1] == 0x72.toByte() && // 'r'
-              signature[2] == 0x41.toByte() && // 'A'
-              signature[3] == 0x55.toByte()) { // 'U'
-            return@withContext FileDetectionResult.Success(SourceType.REMOTE_BIN)
-          }
-          return@withContext FileDetectionResult.Error(
-              "Unrecognized file format. Expected ZIP (PK) or Payload (CrAU) signature.")
-        } catch (e: Exception) {
-          if (url.endsWith(".zip", ignoreCase = true)) {
-            return@withContext FileDetectionResult.Success(SourceType.REMOTE_ZIP)
-          } else if (url.endsWith(".bin", ignoreCase = true)) {
-            return@withContext FileDetectionResult.Success(SourceType.REMOTE_BIN)
-          } else {
-            return@withContext FileDetectionResult.Error("Unable to detect file type: ${e.message}")
-          }
-        }
-      }
-
   fun handleLoadPartitions() {
     if (!inputUrl.startsWith("http")) return
 
@@ -193,7 +141,6 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
 
       if (!urlFromBrowser) {
         val isDownload = isDownloadableFile(inputUrl)
-
         if (!isDownload) {
           isValidating = false
           browserStartUrl = inputUrl
@@ -203,27 +150,17 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
       }
 
       urlFromBrowser = false
+      isValidating = false
 
-      when (val result = detectFileType(inputUrl)) {
-        is FileDetectionResult.Success -> {
-          isValidating = false
-          val userAgent =
-              prefs.getString("user_agent", BuildConfig.USER_AGENT) ?: BuildConfig.USER_AGENT
-          val baseOutputDir =
-              prefs.getString(
-                  "output_dir",
-                  File(Environment.getExternalStorageDirectory(), "payload_dumper").absolutePath)
-                  ?: ""
+      val userAgent =
+          prefs.getString("user_agent", BuildConfig.USER_AGENT) ?: BuildConfig.USER_AGENT
+      val baseOutputDir =
+          prefs.getString(
+              "output_dir",
+              File(Environment.getExternalStorageDirectory(), "payload_dumper").absolutePath) ?: ""
 
-          val cookieToUse = sessionCookie.ifEmpty { null }
-          viewModel.loadRemotePartitions(
-              inputUrl, result.type, userAgent, baseOutputDir, cookieToUse)
-        }
-        is FileDetectionResult.Error -> {
-          isValidating = false
-          viewModel.setRemoteError(result.message)
-        }
-      }
+      val cookieToUse = sessionCookie.ifEmpty { null }
+      viewModel.loadRemotePartitions(inputUrl, userAgent, baseOutputDir, cookieToUse)
     }
   }
 

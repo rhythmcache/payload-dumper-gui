@@ -1,7 +1,6 @@
 package com.rhythmcache.payloaddumper.repository
 
 import com.rhythmcache.payloaddumper.PayloadDumper
-import com.rhythmcache.payloaddumper.SourceType
 import com.rhythmcache.payloaddumper.state.PartitionState
 import com.rhythmcache.payloaddumper.utils.HashVerifier
 import java.io.File
@@ -16,7 +15,6 @@ class LocalPayloadRepository {
   suspend fun extractPartition(
       partitionName: String,
       source: String,
-      type: SourceType,
       outputDir: String,
       verify: Boolean,
       partitionStates: ConcurrentHashMap<String, PartitionState>,
@@ -64,7 +62,6 @@ class LocalPayloadRepository {
             performExtraction(
                 partitionName,
                 source,
-                type,
                 outputPath,
                 verify,
                 partitionStates,
@@ -73,14 +70,7 @@ class LocalPayloadRepository {
           }
         } else {
           performExtraction(
-              partitionName,
-              source,
-              type,
-              outputPath,
-              verify,
-              partitionStates,
-              cancelFlags,
-              updateState)
+              partitionName, source, outputPath, verify, partitionStates, cancelFlags, updateState)
         }
       } finally {
         jobs.remove(partitionName)
@@ -95,7 +85,6 @@ class LocalPayloadRepository {
   private suspend fun performExtraction(
       partitionName: String,
       source: String,
-      type: SourceType,
       outputPath: String,
       verify: Boolean,
       partitionStates: ConcurrentHashMap<String, PartitionState>,
@@ -159,13 +148,7 @@ class LocalPayloadRepository {
         }
 
     try {
-      when (type) {
-        SourceType.LOCAL_BIN ->
-            PayloadDumper.extractPartition(source, partitionName, outputPath, callback)
-        SourceType.LOCAL_ZIP ->
-            PayloadDumper.extractPartitionZip(source, partitionName, outputPath, callback)
-        else -> throw IllegalArgumentException("Invalid type for local extraction")
-      }
+      PayloadDumper.extractLocalPartition(source, partitionName, outputPath, callback)
 
       if (wasCancelled.get()) {
         File(outputPath).delete()

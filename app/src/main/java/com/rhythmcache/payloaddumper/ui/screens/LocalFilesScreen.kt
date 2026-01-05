@@ -82,18 +82,12 @@ fun LocalFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
         onDismiss = { showFilePicker = false },
         onFileSelected = { path ->
           showFilePicker = false
-          val type =
-              if (path.endsWith(".zip")) {
-                SourceType.LOCAL_ZIP
-              } else {
-                SourceType.LOCAL_BIN
-              }
           val baseOutputDir =
               prefs.getString(
                   "output_dir",
                   File(Environment.getExternalStorageDirectory(), "payload_dumper").absolutePath)
                   ?: ""
-          viewModel.loadLocalPartitions(path, type, baseOutputDir)
+          viewModel.loadLocalPartitions(path, baseOutputDir)
         })
   }
 }

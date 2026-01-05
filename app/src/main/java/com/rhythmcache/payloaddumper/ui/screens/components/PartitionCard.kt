@@ -16,7 +16,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.BuildConfig
 import com.rhythmcache.payloaddumper.R
-import com.rhythmcache.payloaddumper.SourceType
 import com.rhythmcache.payloaddumper.state.PartitionState
 import com.rhythmcache.payloaddumper.viewmodel.PayloadViewModel
 
@@ -26,7 +25,6 @@ fun PartitionCard(
     viewModel: PayloadViewModel,
     isLocal: Boolean,
     source: String,
-    type: SourceType,
     outputDirectory: String,
     selectionMode: Boolean,
     onEnterSelectionMode: () -> Unit,
@@ -133,7 +131,6 @@ fun PartitionCard(
                             viewModel.extractPartitionLocal(
                                 state.partition.name,
                                 source,
-                                type,
                                 outputDirectory,
                                 verify,
                                 concurrentLimit)
@@ -144,7 +141,6 @@ fun PartitionCard(
                             viewModel.extractPartitionRemote(
                                 state.partition.name,
                                 source,
-                                type,
                                 outputDirectory,
                                 userAgent,
                                 verify,

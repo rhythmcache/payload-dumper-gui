@@ -5,38 +5,18 @@ object PayloadDumper {
     System.loadLibrary("payload_dumper")
   }
 
-  external fun listPartitions(payloadPath: String): String
+  external fun listLocalPartitions(path: String): String
 
-  external fun listPartitionsZip(zipPath: String): String
+  external fun listRemotePartitions(url: String, userAgent: String?, cookie: String?): String
 
-  external fun extractPartition(
-      payloadPath: String,
+  external fun extractLocalPartition(
+      path: String,
       partitionName: String,
       outputPath: String,
       callback: ProgressCallback?
   )
 
-  external fun extractPartitionZip(
-      zipPath: String,
-      partitionName: String,
-      outputPath: String,
-      callback: ProgressCallback?
-  )
-
-  external fun listPartitionsRemoteZip(url: String, userAgent: String?, cookie: String?): String
-
-  external fun listPartitionsRemoteBin(url: String, userAgent: String?, cookie: String?): String
-
-  external fun extractPartitionRemoteZip(
-      url: String,
-      partitionName: String,
-      outputPath: String,
-      userAgent: String?,
-      cookie: String?,
-      callback: ProgressCallback?
-  )
-
-  external fun extractPartitionRemoteBin(
+  external fun extractRemotePartition(
       url: String,
       partitionName: String,
       outputPath: String,

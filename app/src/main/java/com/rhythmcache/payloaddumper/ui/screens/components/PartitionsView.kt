@@ -130,20 +130,13 @@ fun PartitionsView(
 
             if (isLocal) {
               viewModel.extractSelectedLocal(
-                  state.source, state.sourceType, state.outputDirectory, verify, concurrentLimit)
+                  state.source, state.outputDirectory, verify, concurrentLimit)
             } else {
               val userAgent =
                   prefs.getString("user_agent", BuildConfig.USER_AGENT) ?: BuildConfig.USER_AGENT
-
               val cookie = state.cookie
               viewModel.extractSelectedRemote(
-                  state.source,
-                  state.sourceType,
-                  state.outputDirectory,
-                  userAgent,
-                  verify,
-                  concurrentLimit,
-                  cookie)
+                  state.source, state.outputDirectory, userAgent, verify, concurrentLimit, cookie)
             }
             selectionMode = false
             if (isLocal) viewModel.deselectAllLocal() else viewModel.deselectAllRemote()
@@ -170,7 +163,6 @@ fun PartitionsView(
             viewModel = viewModel,
             isLocal = isLocal,
             source = state.source,
-            type = state.sourceType,
             outputDirectory = state.outputDirectory,
             selectionMode = selectionMode,
             onEnterSelectionMode = { selectionMode = true },

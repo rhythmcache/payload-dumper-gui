@@ -57,18 +57,11 @@ class PayloadViewModel : ViewModel() {
     _remoteUiState.value = UiState.Error(message)
   }
 
-  fun loadLocalPartitions(source: String, type: SourceType, baseOutputDir: String) {
+  fun loadLocalPartitions(source: String, baseOutputDir: String) {
     viewModelScope.launch {
       _localUiState.value = UiState.Loading
       try {
-        val jsonResult =
-            withContext(Dispatchers.IO) {
-              when (type) {
-                SourceType.LOCAL_BIN -> PayloadDumper.listPartitions(source)
-                SourceType.LOCAL_ZIP -> PayloadDumper.listPartitionsZip(source)
-                else -> throw IllegalArgumentException("Invalid type for local")
-              }
-            }
+        val jsonResult = withContext(Dispatchers.IO) { PayloadDumper.listLocalPartitions(source) }
         val payloadInfo = PayloadParser.parse(jsonResult)
 
         localPartitionStates.clear()
@@ -80,8 +73,7 @@ class PayloadViewModel : ViewModel() {
         }
 
         val timestamp = System.currentTimeMillis()
-        val typePrefix = if (type == SourceType.LOCAL_ZIP) "local-zip" else "local-bin"
-        val uniqueDir = File(baseOutputDir, "$typePrefix-$timestamp")
+        val uniqueDir = File(baseOutputDir, "local-$timestamp")
         uniqueDir.mkdirs()
 
         _localUiState.value =
@@ -89,7 +81,6 @@ class PayloadViewModel : ViewModel() {
                 payloadInfo,
                 localPartitionStates.toMap(),
                 source,
-                type,
                 uniqueDir.absolutePath,
                 jsonResult)
       } catch (e: Exception) {
@@ -100,7 +91,6 @@ class PayloadViewModel : ViewModel() {
 
   fun loadRemotePartitions(
       source: String,
-      type: SourceType,
       userAgent: String,
       baseOutputDir: String,
       cookie: String? = null
@@ -110,13 +100,7 @@ class PayloadViewModel : ViewModel() {
       try {
         val jsonResult =
             withContext(Dispatchers.IO) {
-              when (type) {
-                SourceType.REMOTE_BIN ->
-                    PayloadDumper.listPartitionsRemoteBin(source, userAgent, cookie)
-                SourceType.REMOTE_ZIP ->
-                    PayloadDumper.listPartitionsRemoteZip(source, userAgent, cookie)
-                else -> throw IllegalArgumentException("Invalid type for remote")
-              }
+              PayloadDumper.listRemotePartitions(source, userAgent, cookie)
             }
         val payloadInfo = PayloadParser.parse(jsonResult)
 
@@ -129,8 +113,7 @@ class PayloadViewModel : ViewModel() {
         }
 
         val timestamp = System.currentTimeMillis()
-        val typePrefix = if (type == SourceType.REMOTE_ZIP) "remote-zip" else "remote-bin"
-        val uniqueDir = File(baseOutputDir, "$typePrefix-$timestamp")
+        val uniqueDir = File(baseOutputDir, "remote-$timestamp")
         uniqueDir.mkdirs()
 
         _remoteUiState.value =
@@ -138,7 +121,6 @@ class PayloadViewModel : ViewModel() {
                 payloadInfo,
                 remotePartitionStates.toMap(),
                 source,
-                type,
                 uniqueDir.absolutePath,
                 jsonResult,
                 cookie)
@@ -208,7 +190,6 @@ class PayloadViewModel : ViewModel() {
 
   fun extractSelectedLocal(
       source: String,
-      type: SourceType,
       outputDir: String,
       verify: Boolean,
       concurrentLimit: Int? = null
@@ -220,14 +201,13 @@ class PayloadViewModel : ViewModel() {
     localPartitionStates.values
         .filter { it.selected && !it.hasJob }
         .forEach { state ->
-          extractPartitionLocal(state.partition.name, source, type, outputDir, verify, null)
+          extractPartitionLocal(state.partition.name, source, outputDir, verify, null)
         }
   }
 
   fun extractPartitionLocal(
       partitionName: String,
       source: String,
-      type: SourceType,
       outputDir: String,
       verify: Boolean,
       concurrentLimit: Int? = null
@@ -240,7 +220,6 @@ class PayloadViewModel : ViewModel() {
       localRepository.extractPartition(
           partitionName = partitionName,
           source = source,
-          type = type,
           outputDir = outputDir,
           verify = verify,
           partitionStates = localPartitionStates,
@@ -265,7 +244,6 @@ class PayloadViewModel : ViewModel() {
 
   fun extractSelectedRemote(
       source: String,
-      type: SourceType,
       outputDir: String,
       userAgent: String,
       verify: Boolean,
@@ -280,14 +258,13 @@ class PayloadViewModel : ViewModel() {
         .filter { it.selected && !it.hasJob }
         .forEach { state ->
           extractPartitionRemote(
-              state.partition.name, source, type, outputDir, userAgent, verify, null, cookie)
+              state.partition.name, source, outputDir, userAgent, verify, null, cookie)
         }
   }
 
   fun extractPartitionRemote(
       partitionName: String,
       source: String,
-      type: SourceType,
       outputDir: String,
       userAgent: String,
       verify: Boolean,
@@ -302,7 +279,6 @@ class PayloadViewModel : ViewModel() {
       remoteRepository.extractPartition(
           partitionName = partitionName,
           source = source,
-          type = type,
           outputDir = outputDir,
           userAgent = userAgent,
           verify = verify,

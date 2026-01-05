@@ -1,7 +1,6 @@
 package com.rhythmcache.payloaddumper.repository
 
 import com.rhythmcache.payloaddumper.PayloadDumper
-import com.rhythmcache.payloaddumper.SourceType
 import com.rhythmcache.payloaddumper.state.PartitionState
 import com.rhythmcache.payloaddumper.utils.HashVerifier
 import java.io.File
@@ -16,7 +15,6 @@ class RemotePayloadRepository {
   suspend fun extractPartition(
       partitionName: String,
       source: String,
-      type: SourceType,
       outputDir: String,
       userAgent: String,
       verify: Boolean,
@@ -66,7 +64,6 @@ class RemotePayloadRepository {
             performExtraction(
                 partitionName,
                 source,
-                type,
                 outputPath,
                 userAgent,
                 verify,
@@ -79,7 +76,6 @@ class RemotePayloadRepository {
           performExtraction(
               partitionName,
               source,
-              type,
               outputPath,
               userAgent,
               verify,
@@ -101,7 +97,6 @@ class RemotePayloadRepository {
   private suspend fun performExtraction(
       partitionName: String,
       source: String,
-      type: SourceType,
       outputPath: String,
       userAgent: String,
       verify: Boolean,
@@ -166,15 +161,8 @@ class RemotePayloadRepository {
         }
 
     try {
-      when (type) {
-        SourceType.REMOTE_BIN ->
-            PayloadDumper.extractPartitionRemoteBin(
-                source, partitionName, outputPath, userAgent, cookie, callback)
-        SourceType.REMOTE_ZIP ->
-            PayloadDumper.extractPartitionRemoteZip(
-                source, partitionName, outputPath, userAgent, cookie, callback)
-        else -> throw IllegalArgumentException("Invalid type for remote extraction")
-      }
+      PayloadDumper.extractRemotePartition(
+          source, partitionName, outputPath, userAgent, cookie, callback)
 
       if (wasCancelled.get()) {
         File(outputPath).delete()

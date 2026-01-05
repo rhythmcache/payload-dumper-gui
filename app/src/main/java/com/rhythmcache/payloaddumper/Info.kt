@@ -30,10 +30,3 @@ object PayloadParser {
     return json.decodeFromString(jsonString)
   }
 }
-
-enum class SourceType {
-  LOCAL_BIN,
-  LOCAL_ZIP,
-  REMOTE_BIN,
-  REMOTE_ZIP
-}
