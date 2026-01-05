@@ -28,7 +28,7 @@ object LocaleManager {
             @Suppress("DEPRECATION") context.resources.configuration.locale
           }
         } else {
-          Locale(languageCode)
+          Locale.forLanguageTag(languageCode)
         }
 
     Locale.setDefault(locale)
