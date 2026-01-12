@@ -10,7 +10,8 @@ data class PayloadInfo(
     val total_operations: Int,
     val total_size_bytes: Long,
     val total_size_readable: String,
-    val security_patch_level: String? = null
+    val security_patch_level: String? = null,
+    val is_incremental: Boolean = false
 )
 
 @Serializable
@@ -20,7 +21,8 @@ data class Partition(
     val size_readable: String,
     val operations_count: Int,
     val compression_type: String,
-    val hash: String
+    val hash: String,
+    val is_incremental: Boolean = false
 )
 
 object PayloadParser {

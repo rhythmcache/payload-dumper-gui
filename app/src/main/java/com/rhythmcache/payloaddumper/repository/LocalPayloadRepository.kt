@@ -148,7 +148,7 @@ class LocalPayloadRepository {
         }
 
     try {
-      PayloadDumper.extractLocalPartition(source, partitionName, outputPath, callback)
+      PayloadDumper.extractLocalPartition(source, partitionName, outputPath, null, callback)
 
       if (wasCancelled.get()) {
         File(outputPath).delete()

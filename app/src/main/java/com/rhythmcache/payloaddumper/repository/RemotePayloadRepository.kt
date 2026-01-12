@@ -162,7 +162,7 @@ class RemotePayloadRepository {
 
     try {
       PayloadDumper.extractRemotePartition(
-          source, partitionName, outputPath, userAgent, cookie, callback)
+          source, partitionName, outputPath, userAgent, cookie, null, callback)
 
       if (wasCancelled.get()) {
         File(outputPath).delete()

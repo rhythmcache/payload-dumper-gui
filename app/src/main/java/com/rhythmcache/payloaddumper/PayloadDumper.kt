@@ -13,6 +13,7 @@ object PayloadDumper {
       path: String,
       partitionName: String,
       outputPath: String,
+      sourceDir: String?,
       callback: ProgressCallback?
   )
 
@@ -22,6 +23,7 @@ object PayloadDumper {
       outputPath: String,
       userAgent: String?,
       cookie: String?,
+      sourceDir: String?,
       callback: ProgressCallback?
   )
 
