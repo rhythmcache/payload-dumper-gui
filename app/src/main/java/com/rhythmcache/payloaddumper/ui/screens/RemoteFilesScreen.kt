@@ -21,8 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.*
+import com.rhythmcache.payloaddumper.FilePickerDialog
 import com.rhythmcache.payloaddumper.R
 import com.rhythmcache.payloaddumper.state.UiState
+import com.rhythmcache.payloaddumper.ui.screens.components.IncrementalOtaDialog
 import com.rhythmcache.payloaddumper.ui.screens.components.PartitionsView
 import com.rhythmcache.payloaddumper.ui.screens.components.PermissionCard
 import com.rhythmcache.payloaddumper.viewmodel.PayloadViewModel
@@ -44,8 +46,19 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
   var isValidating by remember { mutableStateOf(false) }
   var showBrowser by remember { mutableStateOf(false) }
   var browserStartUrl by remember { mutableStateOf<String?>(null) }
-
   var urlFromBrowser by remember { mutableStateOf(false) }
+
+  var showIncrementalDialog by remember { mutableStateOf(false) }
+  var showSourceDirPicker by remember { mutableStateOf(false) }
+  val currentState = uiState as? UiState.PartitionsLoaded
+
+  LaunchedEffect(currentState) {
+    if (currentState != null &&
+        currentState.payloadInfo.is_incremental &&
+        currentState.sourceDirectory == null) {
+      showIncrementalDialog = true
+    }
+  }
 
   var sessionCookie by remember {
     mutableStateOf(
@@ -401,6 +414,29 @@ fun RemoteFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
           prefs.edit().remove("session_cookie").apply()
           prefs.edit().putBoolean("persist_cookie", false).apply()
           showCookieDialog = false
+        })
+  }
+
+  if (showIncrementalDialog && currentState != null) {
+    IncrementalOtaDialog(
+        payloadInfo = currentState.payloadInfo,
+        lastSourceDir = prefs.getString("last_source_dir", null),
+        onDismiss = { showIncrementalDialog = false },
+        onSelectDirectory = {
+          showIncrementalDialog = false
+          showSourceDirPicker = true
+        },
+        onProceedWithoutSource = { showIncrementalDialog = false })
+  }
+
+  if (showSourceDirPicker) {
+    FilePickerDialog(
+        selectDirectory = true,
+        onDismiss = { showSourceDirPicker = false },
+        onFileSelected = { path ->
+          showSourceDirPicker = false
+          viewModel.setSourceDirectory(path, isLocal = false)
+          prefs.edit().putString("last_source_dir", path).apply()
         })
   }
 }

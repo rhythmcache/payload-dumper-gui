@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.rhythmcache.payloaddumper.*
 import com.rhythmcache.payloaddumper.R
 import com.rhythmcache.payloaddumper.state.UiState
+import com.rhythmcache.payloaddumper.ui.screens.components.IncrementalOtaDialog
 import com.rhythmcache.payloaddumper.ui.screens.components.PartitionsView
 import com.rhythmcache.payloaddumper.ui.screens.components.PermissionCard
 import com.rhythmcache.payloaddumper.viewmodel.PayloadViewModel
@@ -26,6 +27,17 @@ fun LocalFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
   val uiState by viewModel.localUiState.collectAsState()
   val prefs = context.getSharedPreferences("settings", 0)
   var showFilePicker by remember { mutableStateOf(false) }
+  var showIncrementalDialog by remember { mutableStateOf(false) }
+  var showSourceDirPicker by remember { mutableStateOf(false) }
+
+  val currentState = uiState as? UiState.PartitionsLoaded
+  LaunchedEffect(currentState) {
+    if (currentState != null &&
+        currentState.payloadInfo.is_incremental &&
+        currentState.sourceDirectory == null) {
+      showIncrementalDialog = true
+    }
+  }
 
   Column(
       modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -88,6 +100,29 @@ fun LocalFilesScreen(viewModel: PayloadViewModel, hasPermission: Boolean) {
                   File(Environment.getExternalStorageDirectory(), "payload_dumper").absolutePath)
                   ?: ""
           viewModel.loadLocalPartitions(path, baseOutputDir)
+        })
+  }
+
+  if (showIncrementalDialog && currentState != null) {
+    IncrementalOtaDialog(
+        payloadInfo = currentState.payloadInfo,
+        lastSourceDir = prefs.getString("last_source_dir", null),
+        onDismiss = { showIncrementalDialog = false },
+        onSelectDirectory = {
+          showIncrementalDialog = false
+          showSourceDirPicker = true
+        },
+        onProceedWithoutSource = { showIncrementalDialog = false })
+  }
+
+  if (showSourceDirPicker) {
+    FilePickerDialog(
+        selectDirectory = true,
+        onDismiss = { showSourceDirPicker = false },
+        onFileSelected = { path ->
+          showSourceDirPicker = false
+          viewModel.setSourceDirectory(path, isLocal = true)
+          prefs.edit().putString("last_source_dir", path).apply()
         })
   }
 }

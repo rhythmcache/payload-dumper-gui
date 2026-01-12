@@ -22,7 +22,8 @@ class LocalPayloadRepository {
       semaphore: Semaphore?,
       jobs: ConcurrentHashMap<String, Job>,
       updateState: () -> Unit,
-      launchJob: (suspend () -> Unit) -> Job
+      launchJob: (suspend () -> Unit) -> Job,
+      sourceDirectory: String? = null
   ) {
     val initialState = partitionStates[partitionName] ?: return
 
@@ -66,11 +67,19 @@ class LocalPayloadRepository {
                 verify,
                 partitionStates,
                 cancelFlags,
-                updateState)
+                updateState,
+                sourceDirectory)
           }
         } else {
           performExtraction(
-              partitionName, source, outputPath, verify, partitionStates, cancelFlags, updateState)
+              partitionName,
+              source,
+              outputPath,
+              verify,
+              partitionStates,
+              cancelFlags,
+              updateState,
+              sourceDirectory)
         }
       } finally {
         jobs.remove(partitionName)
@@ -89,7 +98,8 @@ class LocalPayloadRepository {
       verify: Boolean,
       partitionStates: ConcurrentHashMap<String, PartitionState>,
       cancelFlags: ConcurrentHashMap<String, AtomicBoolean>,
-      updateState: () -> Unit
+      updateState: () -> Unit,
+      sourceDirectory: String? = null
   ) {
     val wasCancelled = AtomicBoolean(false)
     val hadFatalError = AtomicBoolean(false)
@@ -148,7 +158,8 @@ class LocalPayloadRepository {
         }
 
     try {
-      PayloadDumper.extractLocalPartition(source, partitionName, outputPath, null, callback)
+      PayloadDumper.extractLocalPartition(
+          source, partitionName, outputPath, sourceDirectory, callback)
 
       if (wasCancelled.get()) {
         File(outputPath).delete()

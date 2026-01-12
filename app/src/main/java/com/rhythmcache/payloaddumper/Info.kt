@@ -22,7 +22,7 @@ data class Partition(
     val operations_count: Int,
     val compression_type: String,
     val hash: String,
-    val is_incremental: Boolean = false
+    val is_differential: Boolean = false
 )
 
 object PayloadParser {

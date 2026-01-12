@@ -13,7 +13,8 @@ sealed class UiState {
       val source: String,
       val outputDirectory: String,
       val rawJson: String? = null,
-      val cookie: String? = null
+      val cookie: String? = null,
+      val sourceDirectory: String? = null
   ) : UiState()
 
   data class Error(val message: String) : UiState()

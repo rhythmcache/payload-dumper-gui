@@ -82,7 +82,8 @@ class PayloadViewModel : ViewModel() {
                 localPartitionStates.toMap(),
                 source,
                 uniqueDir.absolutePath,
-                jsonResult)
+                jsonResult,
+                sourceDirectory = null) // NEW: Initialize as null
       } catch (e: Exception) {
         _localUiState.value = UiState.Error(e.message ?: "Unknown error")
       }
@@ -123,7 +124,8 @@ class PayloadViewModel : ViewModel() {
                 source,
                 uniqueDir.absolutePath,
                 jsonResult,
-                cookie)
+                cookie,
+                sourceDirectory = null) // NEW: Initialize as null
       } catch (e: Exception) {
         _remoteUiState.value = UiState.Error(e.message ?: "Unknown error")
       }
@@ -216,6 +218,9 @@ class PayloadViewModel : ViewModel() {
       localExtractionSemaphore = Semaphore(concurrentLimit)
     }
 
+    // NEW: Get source directory from state
+    val sourceDir = (_localUiState.value as? UiState.PartitionsLoaded)?.sourceDirectory
+
     viewModelScope.launch(Dispatchers.IO) {
       localRepository.extractPartition(
           partitionName = partitionName,
@@ -227,7 +232,8 @@ class PayloadViewModel : ViewModel() {
           semaphore = localExtractionSemaphore,
           jobs = localExtractionJobs,
           updateState = ::updateLocalState,
-          launchJob = { block -> viewModelScope.launch(Dispatchers.IO) { block() } })
+          launchJob = { block -> viewModelScope.launch(Dispatchers.IO) { block() } },
+          sourceDirectory = sourceDir) // NEW: Pass source directory
     }
   }
 
@@ -275,6 +281,9 @@ class PayloadViewModel : ViewModel() {
       remoteExtractionSemaphore = Semaphore(concurrentLimit)
     }
 
+    // NEW: Get source directory from state
+    val sourceDir = (_remoteUiState.value as? UiState.PartitionsLoaded)?.sourceDirectory
+
     viewModelScope.launch(Dispatchers.IO) {
       remoteRepository.extractPartition(
           partitionName = partitionName,
@@ -288,7 +297,23 @@ class PayloadViewModel : ViewModel() {
           jobs = remoteExtractionJobs,
           updateState = ::updateRemoteState,
           launchJob = { block -> viewModelScope.launch(Dispatchers.IO) { block() } },
-          cookie = cookie)
+          cookie = cookie,
+          sourceDirectory = sourceDir) // NEW: Pass source directory
+    }
+  }
+
+  // NEW: Function to set source directory
+  fun setSourceDirectory(sourceDir: String, isLocal: Boolean) {
+    if (isLocal) {
+      val current = _localUiState.value
+      if (current is UiState.PartitionsLoaded) {
+        _localUiState.value = current.copy(sourceDirectory = sourceDir)
+      }
+    } else {
+      val current = _remoteUiState.value
+      if (current is UiState.PartitionsLoaded) {
+        _remoteUiState.value = current.copy(sourceDirectory = sourceDir)
+      }
     }
   }
 

@@ -1,189 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<!-- App Name -->
+	<string name="app_name">Payload Dumper</string>
+	<!-- Navigation -->
+	<string name="nav_local">Local</string>
+	<string name="nav_remote">Remote</string>
+	<string name="nav_settings">Settings</string>
+	<!-- Common Actions -->
+	<string name="cancel">Cancel</string>
+	<string name="close">Close</string>
+	<string name="done">Done</string>
+	<string name="clear">Clear</string>
+	<string name="try_again">Try Again</string>
+	<string name="extract">Extract</string>
+	<string name="search">Search</string>
+	<string name="choose_file">Choose File</string>
+	<string name="select">SELECT</string>
+	<string name="ok">OK</string>
+	<string name="save">Save</string>
+	<string name="retry">Retry</string>
+	<string name="later">Later</string>
+	<string name="back">Back</string>
+	<string name="forward">Forward</string>
+	<string name="reload">Reload</string>
+	<string name="home">Home</string>
+	<string name="go">Go</string>
+	<!-- Errors -->
+	<string name="error_prefix">Error: %1$s</string>
+	<string name="cancelled">Cancelled</string>
+	<!-- Remote File Operations -->
+	<string name="file_url">File URL</string>
+	<string name="file_url_placeholder">https://example.com/payload.zip</string>
+	<string name="load_partitions">Load Partitions</string>
+	<string name="validating_url">Validating URL…</string>
+	<string name="url_help_text">URL could be a direct download or a webpage</string>
+	<string name="loading_partitions">Loading partitions…</string>
+	<string name="load_different_payload">Load Different Payload</string>
+	<!-- Browser -->
+	<string name="browser">Browser</string>
+	<string name="open_browser">Open Browser</string>
+	<string name="find_download_payload">Find and download payload files</string>
+	<string name="back_to_remote">Back to Remote Files</string>
+	<string name="search_or_enter_url">Search or enter URL</string>
+	<string name="download_detected">Download Detected</string>
+	<string name="payload_file_detected">Payload file detected:</string>
+	<string name="auth_cookies_transferred">Authentication cookies will be transferred</string>
+	<string name="open_in_dumper">Open in Dumper</string>
+	<!-- Browser History -->
+	<string name="history">History</string>
+	<string name="browsing_history">Browsing History</string>
+	<string name="no_browsing_history">No browsing history yet</string>
+	<string name="clear_all">Clear All</string>
+	<!-- Cookie Management -->
+	<string name="cookie_configured">Cookie configured for this session</string>
+	<string name="cookie_settings">Cookie Settings</string>
+	<string name="session_cookie">Session Cookie</string>
+	<string name="cookie_help_text">Enter cookie value for authenticated requests (Cookie header format only)</string>
+	<string name="cookie">Cookie</string>
+	<string name="cookie_placeholder">key=value; key2=value2</string>
+	<string name="cookie_error_set_cookie">Invalid format. Please paste Cookie header value, not Set-Cookie header.</string>
+	<string name="cookie_error_invalid">Invalid format. Please paste only the cookie values (key=value; key2=value2).</string>
+	<string name="how_to_get_cookies">How to get cookies:</string>
+	<string name="cookie_instructions">1. Open browser DevTools (F12)\n2. Go to Network tab\n3. Click any request\n4. Copy \'Cookie\' header value</string>
+	<string name="persist_cookie">Persist cookie</string>
+	<string name="persist_cookie_on">Saved across app restarts</string>
+	<string name="persist_cookie_off">Cleared when loading different payload</string>
+	<string name="clear_browser_data">Clear Browser Data</string>
+	<string name="clear_browser_data_subtitle">Remove all browser cookies and cache</string>
+	<string name="clear_browser_data_title">Clear Browser Data</string>
+	<string name="clear_browser_data_message">This will permanently remove all cookies, cache, and browsing data from the embedded browser. This action cannot be undone.\n\nContinue?</string>
+	<string name="browser_data_cleared">Browser data cleared successfully</string>
+	<string name="browser_data_clear_failed">Failed to clear browser data</string>
+	<!-- Settings - Appearance -->
+	<string name="appearance">Appearance</string>
+	<string name="theme">Theme</string>
+	<string name="choose_theme">Choose Theme</string>
+	<string name="theme_auto">Auto (System default)</string>
+	<string name="theme_auto_description">Follow system theme</string>
+	<string name="theme_light">Light</string>
+	<string name="theme_light_description">Light mode always</string>
+	<string name="theme_dark">Dark</string>
+	<string name="theme_dark_description">Dark mode always</string>
+	<string name="theme_amoled">AMOLED (Pure black)</string>
+	<string name="theme_amoled_description">Pure black for OLED screens</string>
+	<!-- Settings - Language -->
+	<string name="language_label">Language</string>
+	<string name="language_description">Change app language</string>
+	<string name="choose_language">Choose Language</string>
+	<string name="language_system">System Default</string>
+	<string name="language_system_description">Follow device language</string>
+	<string name="language_english">English</string>
+	<string name="language_hindi">हिन्दी</string>
+	<!-- Settings - Storage -->
+	<string name="storage">Storage</string>
+	<string name="output_directory">Output Directory</string>
+	<string name="output_dir_description">Extractions saved in subdirectories with unique names</string>
+	<string name="select_storage">Select Storage</string>
+	<!-- Settings - Network -->
+	<string name="network">Network</string>
+	<string name="user_agent">User Agent</string>
+	<string name="user_agent_description">Used for remote ota extraction</string>
+	<string name="user_agent_help">Change user agent if websites are loading or displaying incorrectly</string>
+	<string name="presets">Presets</string>
+	<string name="custom">Custom</string>
+	<string name="ua_default">Default</string>
+	<string name="ua_default_description">App\'s default user agent</string>
+	<string name="ua_chrome_desktop">Chrome Desktop</string>
+	<string name="ua_chrome_desktop_description">Useful for desktop-only sites</string>
+	<string name="ua_chrome_mobile">Chrome Mobile</string>
+	<string name="ua_chrome_mobile_description">Modern mobile Chrome</string>
+	<string name="ua_firefox_desktop">Firefox Desktop</string>
+	<string name="ua_firefox_desktop_description">Firefox on Windows</string>
+	<string name="ua_safari_ios">Safari iOS</string>
+	<string name="ua_safari_ios_description">iPhone Safari browser</string>
+	<string name="custom_user_agent">Custom User Agent</string>
+	<string name="custom_user_agent_placeholder">Enter custom user agent string</string>
+	<!-- Settings - Extraction -->
+	<string name="extraction">Extraction</string>
+	<string name="verify_sha256">Verify with SHA-256</string>
+	<string name="verify_sha256_description">Validate extracted partitions using checksum</string>
+	<string name="verifying_progress">Verifying: %1$d%%</string>
+	<string name="limit_concurrent">Limit concurrent extractions</string>
+	<string name="limit_concurrent_description">Controls how many partitions extract simultaneously</string>
+	<string name="concurrent_extraction_limit">Concurrent Extraction Limit</string>
+	<string name="thread_limit">Thread limit</string>
+	<string name="thread_auto">Auto (%1$d threads)</string>
+	<string name="thread_auto_recommended">Auto (Recommended)</string>
+	<string name="thread_auto_description">Uses %1$d threads (CPU cores)</string>
+	<string name="thread_custom">Custom</string>
+	<string name="thread_count_label">Thread count</string>
+	<string name="thread_count_placeholder">1-16</string>
+	<string name="threads_count">%1$d threads</string>
+	<!-- Settings - About & Updates -->
+	<string name="about">About</string>
+	<string name="source_code">Source code</string>
+	<string name="version_prefix">v</string>
+	<string name="check_for_updates">Check for Updates</string>
+	<string name="current_version_format">Version %s</string>
+	<string name="check_updates_description"> Check if a new version is available. Updates are checked on GitHub. Downloading from there directly bypasses the additional screening performed by IzzyOnDroid. </string>
+	<string name="checking_for_updates">Checking for Updates</string>
+	<string name="please_wait">Please wait…</string>
+	<string name="update_available">Update Available</string>
+	<string name="new_version">New Version</string>
+	<string name="current_version_label">Current: v%s</string>
+	<string name="whats_new">What\'s New</string>
+	<string name="download">Download</string>
+	<string name="up_to_date">You\'re Up to Date</string>
+	<string name="running_latest_version">You\'re running the latest version (v%s)</string>
+	<string name="update_check_failed">Update Check Failed</string>
+	<string name="update_check_error_message">Unable to check for updates at this time.</string>
+	<string name="check_internet_connection">Please check your internet connection and try again.</string>
+	<string name="view_releases">View Releases</string>
+	<!-- File Picker -->
+	<string name="no_directories_found">No directories found</string>
+	<string name="no_files_found">No .zip or .bin files found</string>
+	<!-- Partition List -->
+	<string name="ops_compression">%1$s | %2$d ops | %3$s</string>
+	<string name="security_patch">Security Patch: %1$s</string>
+	<string name="partitions_size">%1$d partitions | %2$s</string>
+	<string name="close_search">Close Search</string>
+	<string name="search_partitions">Search Partitions</string>
+	<string name="search_partitions_placeholder">Search partitions…</string>
+	<string name="view_raw_json">View Raw JSON</string>
+	<string name="showing_filtered">Showing %1$d of %2$d partitions</string>
+	<string name="selected_count">%1$d selected</string>
+	<string name="select_all">Select All</string>
+	<!-- Permissions -->
+	<string name="storage_permission_required">Storage permission required</string>
+	<string name="grant_permission">Grant Permission</string>
+
     
-    <!-- App Name -->
-    <string name="app_name">Payload Dumper</string>
-    
-    <!-- Navigation -->
-    <string name="nav_local">Local</string>
-    <string name="nav_remote">Remote</string>
-    <string name="nav_settings">Settings</string>
-    
-    <!-- Common Actions -->
-    <string name="cancel">Cancel</string>
-    <string name="close">Close</string>
-    <string name="done">Done</string>
-    <string name="clear">Clear</string>
-    <string name="try_again">Try Again</string>
-    <string name="extract">Extract</string>
-    <string name="search">Search</string>
-    <string name="choose_file">Choose File</string>
-    <string name="select">SELECT</string>
-    <string name="ok">OK</string>
-    <string name="save">Save</string>
-    <string name="retry">Retry</string>
-    <string name="later">Later</string>
-    <string name="back">Back</string>
-    <string name="forward">Forward</string>
-    <string name="reload">Reload</string>
-    <string name="home">Home</string>
-    <string name="go">Go</string>
-    
-    <!-- Errors -->
-    <string name="error_prefix">Error: %1$s</string>
-    <string name="cancelled">Cancelled</string>
-    
-    <!-- Remote File Operations -->
-    <string name="file_url">File URL</string>
-    <string name="file_url_placeholder">https://example.com/payload.zip</string>
-    <string name="load_partitions">Load Partitions</string>
-    <string name="validating_url">Validating URL…</string>
-    <string name="url_help_text">URL could be a direct download or a webpage</string>
-    <string name="loading_partitions">Loading partitions…</string>
-    <string name="load_different_payload">Load Different Payload</string>
-    
-    <!-- Browser -->
-    <string name="browser">Browser</string>
-    <string name="open_browser">Open Browser</string>
-    <string name="find_download_payload">Find and download payload files</string>
-    <string name="back_to_remote">Back to Remote Files</string>
-    <string name="search_or_enter_url">Search or enter URL</string>
-    <string name="download_detected">Download Detected</string>
-    <string name="payload_file_detected">Payload file detected:</string>
-    <string name="auth_cookies_transferred">Authentication cookies will be transferred</string>
-    <string name="open_in_dumper">Open in Dumper</string>
-    
-    <!-- Browser History -->
-    <string name="history">History</string>
-    <string name="browsing_history">Browsing History</string>
-    <string name="no_browsing_history">No browsing history yet</string>
-    <string name="clear_all">Clear All</string>
-    
-    <!-- Cookie Management -->
-    <string name="cookie_configured">Cookie configured for this session</string>
-    <string name="cookie_settings">Cookie Settings</string>
-    <string name="session_cookie">Session Cookie</string>
-    <string name="cookie_help_text">Enter cookie value for authenticated requests (Cookie header format only)</string>
-    <string name="cookie">Cookie</string>
-    <string name="cookie_placeholder">key=value; key2=value2</string>
-    <string name="cookie_error_set_cookie">Invalid format. Please paste Cookie header value, not Set-Cookie header.</string>
-    <string name="cookie_error_invalid">Invalid format. Please paste only the cookie values (key=value; key2=value2).</string>
-    <string name="how_to_get_cookies">How to get cookies:</string>
-    <string name="cookie_instructions">1. Open browser DevTools (F12)\n2. Go to Network tab\n3. Click any request\n4. Copy \'Cookie\' header value</string>
-    <string name="persist_cookie">Persist cookie</string>
-    <string name="persist_cookie_on">Saved across app restarts</string>
-    <string name="persist_cookie_off">Cleared when loading different payload</string>
-    <string name="clear_browser_data">Clear Browser Data</string>
-    <string name="clear_browser_data_subtitle">Remove all browser cookies and cache</string>
-    <string name="clear_browser_data_title">Clear Browser Data</string>
-    <string name="clear_browser_data_message">This will permanently remove all cookies, cache, and browsing data from the embedded browser. This action cannot be undone.\n\nContinue?</string>
-    <string name="browser_data_cleared">Browser data cleared successfully</string>
-    <string name="browser_data_clear_failed">Failed to clear browser data</string>
-    
-    <!-- Settings - Appearance -->
-    <string name="appearance">Appearance</string>
-    <string name="theme">Theme</string>
-    <string name="choose_theme">Choose Theme</string>
-    <string name="theme_auto">Auto (System default)</string>
-    <string name="theme_auto_description">Follow system theme</string>
-    <string name="theme_light">Light</string>
-    <string name="theme_light_description">Light mode always</string>
-    <string name="theme_dark">Dark</string>
-    <string name="theme_dark_description">Dark mode always</string>
-    <string name="theme_amoled">AMOLED (Pure black)</string>
-    <string name="theme_amoled_description">Pure black for OLED screens</string>
-    
-    <!-- Settings - Language -->
-    <string name="language_label">Language</string>
-    <string name="language_description">Change app language</string>
-    <string name="choose_language">Choose Language</string>
-    <string name="language_system">System Default</string>
-    <string name="language_system_description">Follow device language</string>
-    <string name="language_english">English</string>
-    <string name="language_hindi">हिन्दी</string>
-    
-    <!-- Settings - Storage -->
-    <string name="storage">Storage</string>
-    <string name="output_directory">Output Directory</string>
-    <string name="output_dir_description">Extractions saved in subdirectories with unique names</string>
-    <string name="select_storage">Select Storage</string>
-    
-    <!-- Settings - Network -->
-    <string name="network">Network</string>
-    <string name="user_agent">User Agent</string>
-    <string name="user_agent_description">Used for remote ota extraction</string>
-    <string name="user_agent_help">Change user agent if websites are loading or displaying incorrectly</string>
-    <string name="presets">Presets</string>
-    <string name="custom">Custom</string>
-    <string name="ua_default">Default</string>
-    <string name="ua_default_description">App\'s default user agent</string>
-    <string name="ua_chrome_desktop">Chrome Desktop</string>
-    <string name="ua_chrome_desktop_description">Useful for desktop-only sites</string>
-    <string name="ua_chrome_mobile">Chrome Mobile</string>
-    <string name="ua_chrome_mobile_description">Modern mobile Chrome</string>
-    <string name="ua_firefox_desktop">Firefox Desktop</string>
-    <string name="ua_firefox_desktop_description">Firefox on Windows</string>
-    <string name="ua_safari_ios">Safari iOS</string>
-    <string name="ua_safari_ios_description">iPhone Safari browser</string>
-    <string name="custom_user_agent">Custom User Agent</string>
-    <string name="custom_user_agent_placeholder">Enter custom user agent string</string>
-    
-    <!-- Settings - Extraction -->
-    <string name="extraction">Extraction</string>
-    <string name="verify_sha256">Verify with SHA-256</string>
-    <string name="verify_sha256_description">Validate extracted partitions using checksum</string>
-    <string name="verifying_progress">Verifying: %1$d%%</string>
-    <string name="limit_concurrent">Limit concurrent extractions</string>
-    <string name="limit_concurrent_description">Controls how many partitions extract simultaneously</string>
-    <string name="concurrent_extraction_limit">Concurrent Extraction Limit</string>
-    <string name="thread_limit">Thread limit</string>
-    <string name="thread_auto">Auto (%1$d threads)</string>
-    <string name="thread_auto_recommended">Auto (Recommended)</string>
-    <string name="thread_auto_description">Uses %1$d threads (CPU cores)</string>
-    <string name="thread_custom">Custom</string>
-    <string name="thread_count_label">Thread count</string>
-    <string name="thread_count_placeholder">1-16</string>
-    <string name="threads_count">%1$d threads</string>
-    
-    <!-- Settings - About & Updates -->
-    <string name="about">About</string>
-    <string name="source_code">Source code</string>
-    <string name="version_prefix">v</string>
-    <string name="check_for_updates">Check for Updates</string>
-    <string name="current_version_format">Version %s</string>
-    <string name="check_updates_description"> Check if a new version is available. Updates are checked on GitHub. Downloading from there directly bypasses the additional screening performed by IzzyOnDroid. </string> 
-    <string name="checking_for_updates">Checking for Updates</string>
-    <string name="please_wait">Please wait…</string>
-    <string name="update_available">Update Available</string>
-    <string name="new_version">New Version</string>
-    <string name="current_version_label">Current: v%s</string>
-    <string name="whats_new">What\'s New</string>
-    <string name="download">Download</string>
-    <string name="up_to_date">You\'re Up to Date</string>
-    <string name="running_latest_version">You\'re running the latest version (v%s)</string>
-    <string name="update_check_failed">Update Check Failed</string>
-    <string name="update_check_error_message">Unable to check for updates at this time.</string>
-    <string name="check_internet_connection">Please check your internet connection and try again.</string>
-    <string name="view_releases">View Releases</string>
-    
-    <!-- File Picker -->
-    <string name="no_directories_found">No directories found</string>
-    <string name="no_files_found">No .zip or .bin files found</string>
-    
-    <!-- Partition List -->
-    <string name="ops_compression">%1$s | %2$d ops | %3$s</string>
-    <string name="security_patch">Security Patch: %1$s</string>
-    <string name="partitions_size">%1$d partitions | %2$s</string>
-    <string name="close_search">Close Search</string>
-    <string name="search_partitions">Search Partitions</string>
-    <string name="search_partitions_placeholder">Search partitions…</string>
-    <string name="view_raw_json">View Raw JSON</string>
-    <string name="showing_filtered">Showing %1$d of %2$d partitions</string>
-    <string name="selected_count">%1$d selected</string>
-    <string name="select_all">Select All</string>
-    
-    <!-- Permissions -->
-    <string name="storage_permission_required">Storage permission required</string>
-    <string name="grant_permission">Grant Permission</string>
-    
+	<string name="incremental_update_detected">Incremental Update Detected</string>
+	<string name="experimental_feature_warning"> Experimental: Incremental OTA support is experimental and may not work for all updates</string>
+	<string name="incremental_ota_explanation">This is an incremental/differential update that requires partition images from the previous build to extract.</string>
+	<string name="requires_source_images">Required source partition images:</string>
+	<string name="and_more">...and more</string>
+	<string name="last_used_directory">Last used:</string>
+	<string name="select_source_directory">Select Source Directory</string>
+	<string name="try_without_source">Try Without Source</string>
+	<string name="extraction_may_fail">(Extraction will fail)</string>
 </resources>

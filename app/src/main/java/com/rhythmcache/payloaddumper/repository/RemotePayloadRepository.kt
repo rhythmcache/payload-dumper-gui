@@ -24,7 +24,8 @@ class RemotePayloadRepository {
       jobs: ConcurrentHashMap<String, Job>,
       updateState: () -> Unit,
       launchJob: (suspend () -> Unit) -> Job,
-      cookie: String? = null
+      cookie: String? = null,
+      sourceDirectory: String? = null
   ) {
     val initialState = partitionStates[partitionName] ?: return
 
@@ -70,7 +71,8 @@ class RemotePayloadRepository {
                 partitionStates,
                 cancelFlags,
                 updateState,
-                cookie)
+                cookie,
+                sourceDirectory)
           }
         } else {
           performExtraction(
@@ -82,7 +84,8 @@ class RemotePayloadRepository {
               partitionStates,
               cancelFlags,
               updateState,
-              cookie)
+              cookie,
+              sourceDirectory)
         }
       } finally {
         jobs.remove(partitionName)
@@ -103,7 +106,8 @@ class RemotePayloadRepository {
       partitionStates: ConcurrentHashMap<String, PartitionState>,
       cancelFlags: ConcurrentHashMap<String, AtomicBoolean>,
       updateState: () -> Unit,
-      cookie: String? = null
+      cookie: String? = null,
+      sourceDirectory: String? = null
   ) {
     val wasCancelled = AtomicBoolean(false)
     val hadFatalError = AtomicBoolean(false)
@@ -162,7 +166,7 @@ class RemotePayloadRepository {
 
     try {
       PayloadDumper.extractRemotePartition(
-          source, partitionName, outputPath, userAgent, cookie, null, callback)
+          source, partitionName, outputPath, userAgent, cookie, sourceDirectory, callback)
 
       if (wasCancelled.get()) {
         File(outputPath).delete()
