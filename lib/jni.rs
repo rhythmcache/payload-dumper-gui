@@ -225,15 +225,17 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractL
     path: JString,
     partition_name: JString,
     output_path: JString,
+    source_dir: JString,
     callback: JObject,
 ) {
     handle_extract(env, |env| {
         let path_str = jstring_to_string(env, &path)?;
         let partition = jstring_to_string(env, &partition_name)?;
         let output = jstring_to_string(env, &output_path)?;
+        let source = optional_jstring(env, &source_dir)?;
         let cb = create_callback(env, &callback)?;
 
-        extract_local_partition(path_str, &partition, output, cb)
+        extract_local_partition(path_str, &partition, output, source, cb)
             .map_err(|e| format!("Extraction failed: {}", e))
     })
 }
@@ -247,6 +249,7 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractR
     output_path: JString,
     user_agent: JString,
     cookies: JString,
+    source_dir: JString,
     callback: JObject,
 ) {
     handle_extract(env, |env| {
@@ -255,6 +258,7 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractR
         let output = jstring_to_string(env, &output_path)?;
         let ua = optional_jstring(env, &user_agent)?;
         let ck = optional_jstring(env, &cookies)?;
+        let source = optional_jstring(env, &source_dir)?;
         let cb = create_callback(env, &callback)?;
 
         extract_remote_partition(
@@ -263,6 +267,7 @@ pub extern "system" fn Java_com_rhythmcache_payloaddumper_PayloadDumper_extractR
             output,
             ua.as_deref(),
             ck.as_deref(),
+            source,
             cb,
         )
         .map_err(|e| format!("Extraction failed: {}", e))

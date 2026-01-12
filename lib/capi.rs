@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2025 rhythmcache
-// https://github.com/rhythmcache/payload-dumper-rust
 
 use std::ffi::{CStr, CString, c_char, c_void};
 use std::panic;
@@ -152,7 +151,8 @@ where
 ///   "total_operations": 1000,
 ///   "total_size_bytes": 5000000000,
 ///   "total_size_readable": "4.66 GB",
-///   "security_patch_level": "2025-12-05" // optional, present only if available in payload
+///   "security_patch_level": "2025-12-05", // optional, present only if available in payload
+///   "is_incremental": true // true if any partition requires differential update
 /// }
 ///
 /// The function automatically detects whether the file is a payload.bin or ZIP file
@@ -302,6 +302,7 @@ fn create_progress_callback(
 /// @param path Path to the local file (payload.bin or ZIP)
 /// @param partition_name Name of the partition to extract
 /// @param output_path Path where the partition image will be written
+/// @param source_dir Optional path to directory containing source partition images for incremental updates (pass NULL if not incremental)
 /// @param callback Optional progress callback (pass NULL for no callback)
 /// @param user_data User data passed to callback (can be NULL)
 /// @return 0 on success, -1 on failure (check payload_get_last_error())
@@ -309,6 +310,10 @@ fn create_progress_callback(
 /// This function can be safely called from multiple threads concurrently.
 /// Each thread can extract a different partition in parallel.
 /// The function automatically detects whether the file is a payload.bin or ZIP file
+///
+/// For incremental/differential OTA updates, you must provide source_dir containing the
+/// old partition images (e.g., system.img, vendor.img). The function will look for
+/// <partition_name>.img in the source_dir.
 ///
 /// - pass NULL for callback parameter if you don't want progress updates
 /// - the partition_name and warning_message pointers passed to the callback
@@ -324,6 +329,7 @@ pub extern "C" fn payload_extract_local_partition(
     path: *const c_char,
     partition_name: *const c_char,
     output_path: *const c_char,
+    source_dir: *const c_char,
     callback: CProgressCallback,
     user_data: *mut c_void,
 ) -> i32 {
@@ -331,10 +337,17 @@ pub extern "C" fn payload_extract_local_partition(
         let path_str = c_str_to_rust(path, "path")?;
         let partition_str = c_str_to_rust(partition_name, "partition_name")?;
         let output_str = c_str_to_rust(output_path, "output_path")?;
+        let source_str = optional_c_str_to_rust(source_dir, "source_dir")?;
         let progress_cb = create_progress_callback(callback, user_data);
 
-        extract_local_partition(path_str, partition_str, output_str, progress_cb)
-            .map_err(|e| format!("Extraction failed: {}", e))
+        extract_local_partition(
+            path_str,
+            partition_str,
+            output_str,
+            source_str.map(|s| s.to_string()),
+            progress_cb,
+        )
+        .map_err(|e| format!("Extraction failed: {}", e))
     })
 }
 
@@ -345,6 +358,7 @@ pub extern "C" fn payload_extract_local_partition(
 /// @param output_path Path where the partition image will be written
 /// @param user_agent Optional user agent string (pass NULL for default)
 /// @param cookies Optional cookie string (pass NULL for default)
+/// @param source_dir Optional path to directory containing source partition images for incremental updates (pass NULL if not incremental)
 /// @param callback Optional progress callback (pass NULL for no callback)
 /// @param user_data User data passed to callback (can be NULL)
 /// @return 0 on success, -1 on failure (check payload_get_last_error())
@@ -352,6 +366,10 @@ pub extern "C" fn payload_extract_local_partition(
 /// this function can be safely called from multiple threads concurrently.
 /// each thread can extract a different partition in parallel.
 /// The function automatically detects whether the file is a payload.bin or ZIP file
+///
+/// For incremental/differential OTA updates, you must provide source_dir containing the
+/// old partition images (e.g., system.img, vendor.img). The function will look for
+/// <partition_name>.img in the source_dir.
 ///
 /// - pass NULL for callback parameter if you don't want progress updates
 /// - the partition_name and warning_message pointers passed to the callback
@@ -369,6 +387,7 @@ pub extern "C" fn payload_extract_remote_partition(
     output_path: *const c_char,
     user_agent: *const c_char,
     cookies: *const c_char,
+    source_dir: *const c_char,
     callback: CProgressCallback,
     user_data: *mut c_void,
 ) -> i32 {
@@ -378,6 +397,7 @@ pub extern "C" fn payload_extract_remote_partition(
         let output_str = c_str_to_rust(output_path, "output_path")?;
         let user_agent_str = optional_c_str_to_rust(user_agent, "user_agent")?;
         let cookies_str = optional_c_str_to_rust(cookies, "cookies")?;
+        let source_str = optional_c_str_to_rust(source_dir, "source_dir")?;
         let progress_cb = create_progress_callback(callback, user_data);
 
         extract_remote_partition(
@@ -386,6 +406,7 @@ pub extern "C" fn payload_extract_remote_partition(
             output_str,
             user_agent_str,
             cookies_str,
+            source_str.map(|s| s.to_string()),
             progress_cb,
         )
         .map_err(|e| format!("Remote extraction failed: {}", e))

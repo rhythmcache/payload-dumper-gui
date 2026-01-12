@@ -14,8 +14,8 @@ use payload_dumper_core::readers::{
     local_reader::LocalAsyncPayloadReader, local_zip_reader::LocalAsyncZipPayloadReader,
     remote_bin_reader::RemoteAsyncBinPayloadReader, remote_zip_reader::RemoteAsyncZipPayloadReader,
 };
-use payload_dumper_core::utils::format_size;
-use std::path::Path;
+use payload_dumper_core::utils::{format_size, is_diff_operation};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::fs::File;
@@ -60,6 +60,7 @@ pub struct PartitionInfo {
     pub operations_count: usize,
     pub compression_type: String,
     pub hash: Option<String>,
+    pub is_differential: bool,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -71,6 +72,7 @@ pub struct PayloadSummary {
     pub total_size_readable: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub security_patch_level: Option<String>,
+    pub is_incremental: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -197,7 +199,7 @@ pub fn list_local_partitions<P: AsRef<Path>>(path: P) -> Result<String> {
         };
 
         let metadata = get_metadata(&manifest, data_offset, false, None).await?;
-        build_summary(&metadata)
+        build_summary(&manifest, &metadata)
     })
 }
 
@@ -215,7 +217,7 @@ pub fn list_remote_partitions(url: String, ua: Option<&str>, ck: Option<&str>) -
         };
 
         let metadata = get_metadata(&manifest, data_offset, false, None).await?;
-        build_summary(&metadata)
+        build_summary(&manifest, &metadata)
     })
 }
 
@@ -223,6 +225,7 @@ pub fn extract_local_partition<P1: AsRef<Path>, P2: AsRef<Path>>(
     path: P1,
     partition_name: &str,
     output_path: P2,
+    source_dir: Option<String>,
     callback: Option<ProgressCallback>,
 ) -> Result<()> {
     if tokio::runtime::Handle::try_current().is_ok() {
@@ -246,6 +249,8 @@ pub fn extract_local_partition<P1: AsRef<Path>, P2: AsRef<Path>>(
 
         let reporter = create_reporter(callback);
 
+        let source_path = source_dir.map(PathBuf::from);
+
         match file_type {
             FileType::Bin => {
                 let reader = LocalAsyncPayloadReader::new(path.as_ref().to_path_buf()).await?;
@@ -256,6 +261,7 @@ pub fn extract_local_partition<P1: AsRef<Path>, P2: AsRef<Path>>(
                     output_path.as_ref().to_path_buf(),
                     &reader,
                     &*reporter,
+                    source_path,
                 )
                 .await
             }
@@ -268,6 +274,7 @@ pub fn extract_local_partition<P1: AsRef<Path>, P2: AsRef<Path>>(
                     output_path.as_ref().to_path_buf(),
                     &reader,
                     &*reporter,
+                    source_path,
                 )
                 .await
             }
@@ -281,6 +288,7 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
     output_path: P,
     ua: Option<&str>,
     ck: Option<&str>,
+    source_dir: Option<String>,
     callback: Option<ProgressCallback>,
 ) -> Result<()> {
     if tokio::runtime::Handle::try_current().is_ok() {
@@ -304,6 +312,8 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
 
         let reporter = create_reporter(callback);
 
+        let source_path = source_dir.map(PathBuf::from);
+
         match file_type {
             FileType::Zip => {
                 let reader = RemoteAsyncZipPayloadReader::new(url, ua, ck).await?;
@@ -314,6 +324,7 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
                     output_path.as_ref().to_path_buf(),
                     &reader,
                     &*reporter,
+                    source_path,
                 )
                 .await
             }
@@ -326,6 +337,7 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
                     output_path.as_ref().to_path_buf(),
                     &reader,
                     &*reporter,
+                    source_path,
                 )
                 .await
             }
@@ -333,17 +345,38 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
     })
 }
 
-fn build_summary(metadata: &payload_dumper_core::structs::PayloadMetadata) -> Result<String> {
-    let partitions: Vec<PartitionInfo> = metadata
+fn is_partition_differential(partition: &payload_dumper_core::structs::PartitionUpdate) -> bool {
+    partition
+        .operations
+        .iter()
+        .any(|op| is_diff_operation(op.r#type()))
+}
+
+fn build_summary(
+    manifest: &payload_dumper_core::structs::DeltaArchiveManifest,
+    metadata: &payload_dumper_core::structs::PayloadMetadata,
+) -> Result<String> {
+    let mut is_incremental = false;
+
+    let partitions: Vec<PartitionInfo> = manifest
         .partitions
         .iter()
-        .map(|p| PartitionInfo {
-            name: p.partition_name.clone(),
-            size_bytes: p.size_in_bytes,
-            size_readable: p.size_readable.clone(),
-            operations_count: p.operations_count,
-            compression_type: p.compression_type.clone(),
-            hash: p.hash.clone(),
+        .zip(metadata.partitions.iter())
+        .map(|(manifest_part, metadata_part)| {
+            let is_diff = is_partition_differential(manifest_part);
+            if is_diff {
+                is_incremental = true;
+            }
+
+            PartitionInfo {
+                name: metadata_part.partition_name.clone(),
+                size_bytes: metadata_part.size_in_bytes,
+                size_readable: metadata_part.size_readable.clone(),
+                operations_count: metadata_part.operations_count,
+                compression_type: metadata_part.compression_type.clone(),
+                hash: metadata_part.hash.clone(),
+                is_differential: is_diff,
+            }
         })
         .collect();
 
@@ -356,6 +389,7 @@ fn build_summary(metadata: &payload_dumper_core::structs::PayloadMetadata) -> Re
         total_size_readable: format_size(total_size),
         partitions,
         security_patch_level: metadata.security_patch_level.clone(),
+        is_incremental,
     };
 
     serde_json::to_string_pretty(&summary).map_err(|e| anyhow!("Serialization failed: {}", e))
