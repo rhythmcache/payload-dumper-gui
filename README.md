@@ -60,8 +60,12 @@ Windows and Android app to extract Android OTA payloads from local files or HTTP
 - [imgui](https://github.com/ocornut/imgui.git)  
   Immediate-mode graphical user interface for C++
 
+- Attribution & Use of AI Tools
+Some parts of this code documentation, or refactoring were written or assisted by LLMs such as **ChatGPT** and **Claude**
+
 If you prefer a command-line utility, use  
 [payload-dumper-rust](https://github.com/rhythmcache/payload-dumper-rust.git), which provides the same or more features.
+
 
 ---
 
