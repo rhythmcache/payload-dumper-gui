@@ -4,6 +4,7 @@
 #include <shlobj.h>
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -119,10 +120,12 @@ struct Status {
   char file_path[512];
   char url_input[1024];
   char output_dir[512];
+  char source_dir[512];
   char user_agent[256];
 
   std::deque<Part> partitions;
   std::vector<std::thread> extraction_threads;
+  std::mutex extraction_threads_mutex;
 
   uint64_t total_partitions;
   uint64_t total_operations;
@@ -134,10 +137,14 @@ struct Status {
 
   std::string error_message;
   bool show_error_popup;
+  bool show_incremental_popup;
   bool partitions_loaded;
   bool enable_verification;
+  bool is_incremental_update;
+  bool proceed_without_source;
 
   std::atomic<bool> loading_partitions;
+  std::atomic<bool> clearing_partitions;
   std::thread loading_thread;
 
   std::atomic<bool> shutdown_requested;
@@ -150,28 +157,64 @@ struct Status {
         total_size_bytes(0),
         security_patch_level(""),
         show_error_popup(false),
+        show_incremental_popup(false),
         partitions_loaded(false),
         enable_verification(true),
+        is_incremental_update(false),
+        proceed_without_source(false),
         loading_partitions(false),
+        clearing_partitions(false),
         shutdown_requested(false) {
     file_path[0] = '\0';
     url_input[0] = '\0';
     output_dir[0] = '\0';
+    source_dir[0] = '\0';
     snprintf(user_agent, sizeof(user_agent), "PayloadDumper-GUI/%d.%d.%d",
              PAYLOAD_DUMPER_MAJOR, PAYLOAD_DUMPER_MINOR, PAYLOAD_DUMPER_PATCH);
 
     GetCurrentDirectoryA(sizeof(output_dir), output_dir);
   }
 
+  void cancel_and_join_extractions() {
+    {
+      std::lock_guard<std::mutex> lock(partitions_mutex);
+      for (auto& part : partitions) {
+        if (part.extracting.load()) {
+          part.cancel_flag.store(true);
+        }
+      }
+    }
+
+    std::vector<std::thread> threads_to_join;
+    {
+      std::lock_guard<std::mutex> lock(extraction_threads_mutex);
+      threads_to_join.swap(extraction_threads);
+    }
+
+    for (auto& t : threads_to_join) {
+      if (t.joinable()) {
+        t.join();
+      }
+    }
+  }
+
   void clear_partitions() {
-    std::lock_guard<std::mutex> lock(partitions_mutex);
-    partitions.clear();
-    total_partitions = 0;
-    total_operations = 0;
-    total_size_bytes = 0;
-    total_size_readable.clear();
-    security_patch_level.clear();
-    partitions_loaded = false;
+    clearing_partitions.store(true);
+    cancel_and_join_extractions();
+    {
+      std::lock_guard<std::mutex> lock(partitions_mutex);
+      partitions.clear();
+      total_partitions = 0;
+      total_operations = 0;
+      total_size_bytes = 0;
+      total_size_readable.clear();
+      security_patch_level.clear();
+      is_incremental_update = false;
+      show_incremental_popup = false;
+      proceed_without_source = false;
+      partitions_loaded = false;
+    }
+    clearing_partitions.store(false);
   }
 
   void set_error(const char* msg) {
@@ -217,12 +260,13 @@ bool chooser(char* buffer, size_t buffer_size) {
   return GetOpenFileNameA(&ofn) != 0;
 }
 
-bool out_chooser(char* buffer, size_t buffer_size) {
+bool out_chooser_with_title(char* buffer, size_t buffer_size,
+                            const char* title) {
   BROWSEINFOA bi;
   ZeroMemory(&bi, sizeof(bi));
 
   bi.hwndOwner = GetActiveWindow();
-  bi.lpszTitle = "Select Output Directory";
+  bi.lpszTitle = title;
   bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_USENEWUI;
 
   LPITEMIDLIST pidl = SHBrowseForFolderA(&bi);
@@ -234,6 +278,26 @@ bool out_chooser(char* buffer, size_t buffer_size) {
   return false;
 }
 
+bool out_chooser(char* buffer, size_t buffer_size) {
+  return out_chooser_with_title(buffer, buffer_size, "Select Output Directory");
+}
+
+bool json_bool_value(const char* json, const char* key) {
+  if (!json || !key) return false;
+  const char* pos = strstr(json, key);
+  if (!pos) return false;
+
+  pos = strchr(pos, ':');
+  if (!pos) return false;
+  pos++;
+
+  while (*pos != '\0' && std::isspace(static_cast<unsigned char>(*pos))) {
+    pos++;
+  }
+
+  return strncmp(pos, "true", 4) == 0;
+}
+
 bool read_json(const char* json_str, Status& state) {
   struct json_value_s* root = json_parse(json_str, strlen(json_str));
   if (!root) return false;
@@ -241,6 +305,7 @@ bool read_json(const char* json_str, Status& state) {
   struct json_object_s* root_obj = (struct json_object_s*)root->payload;
 
   state.clear_partitions();
+  state.is_incremental_update = json_bool_value(json_str, "\"is_incremental\"");
 
   std::lock_guard<std::mutex> lock(state.partitions_mutex);
 
@@ -306,6 +371,9 @@ bool read_json(const char* json_str, Status& state) {
 
   free(root);
   state.partitions_loaded = true;
+  if (state.is_incremental_update && state.source_dir[0] == '\0') {
+    state.show_incremental_popup = true;
+  }
   return true;
 }
 
@@ -354,9 +422,22 @@ void verify_part(Part* info, const std::string& output_path) {
     return;
   }
 
-  fseek(file, 0, SEEK_END);
-  uint64_t file_size = ftell(file);
-  fseek(file, 0, SEEK_SET);
+  if (_fseeki64(file, 0, SEEK_END) != 0) {
+    info->set_verify_status("Error: Cannot read file size");
+    info->verification_passed.store(false);
+    info->verifying.store(false);
+    fclose(file);
+    return;
+  }
+
+  int64_t file_size = _ftelli64(file);
+  if (file_size < 0 || _fseeki64(file, 0, SEEK_SET) != 0) {
+    info->set_verify_status("Error: Cannot read file size");
+    info->verification_passed.store(false);
+    info->verifying.store(false);
+    fclose(file);
+    return;
+  }
 
   SHA256_CTX ctx;
   sha256_init(&ctx);
@@ -371,8 +452,12 @@ void verify_part(Part* info, const std::string& output_path) {
     if (n > 0) {
       sha256_update(&ctx, buffer, n);
       bytes_read += n;
-      float progress = (bytes_read * 100.0f) / file_size;
-      info->verify_progress.store(progress);
+      if (file_size > 0) {
+        float progress = (bytes_read * 100.0f) / static_cast<float>(file_size);
+        info->verify_progress.store(progress);
+      } else {
+        info->verify_progress.store(100.0f);
+      }
     }
     if (n < BUFFER_SIZE) break;
   }
@@ -409,34 +494,26 @@ void verify_part(Part* info, const std::string& output_path) {
 }
 
 void dump_part(Part* info, const std::string& source_path, Status::Source mode,
-               Status::SRC_TYPE file_type, const std::string& output_dir,
-               const std::string& user_agent, bool verify) {
+               const std::string& output_dir,
+               const std::string& user_agent, const std::string& source_dir,
+               bool verify) {
   char output_path[512];
   snprintf(output_path, sizeof(output_path), "%s/%s.img", output_dir.c_str(),
            info->name.c_str());
 
   int32_t result = -1;
 
+  const char* source_dir_ptr = source_dir.empty() ? nullptr : source_dir.c_str();
+
   if (mode == Status::Source::SRC_FILE) {
-    if (file_type == Status::SRC_TYPE::TYPE_ZIP) {
-      result =
-          payload_extract_partition_zip(source_path.c_str(), info->name.c_str(),
-                                        output_path, progress_callback, info);
-    } else {
-      result =
-          payload_extract_partition(source_path.c_str(), info->name.c_str(),
-                                    output_path, progress_callback, info);
-    }
+    result = payload_extract_local_partition(source_path.c_str(),
+                                             info->name.c_str(), output_path,
+                                             source_dir_ptr, progress_callback,
+                                             info);
   } else {
-    if (file_type == Status::SRC_TYPE::TYPE_ZIP) {
-      result = payload_extract_partition_remote_zip(
-          source_path.c_str(), info->name.c_str(), output_path,
-          user_agent.c_str(), nullptr, progress_callback, info);
-    } else {
-      result = payload_extract_partition_remote_bin(
-          source_path.c_str(), info->name.c_str(), output_path,
-          user_agent.c_str(), nullptr, progress_callback, info);
-    }
+    result = payload_extract_remote_partition(
+        source_path.c_str(), info->name.c_str(), output_path, user_agent.c_str(),
+        nullptr, source_dir_ptr, progress_callback, info);
   }
 
   if (result != 0 && !info->cancel_flag.load()) {
@@ -458,12 +535,25 @@ void dump_part(Part* info, const std::string& source_path, Status::Source mode,
 }
 
 void start_extraction(Part* info) {
+  if (G.loading_partitions.load() || G.clearing_partitions.load() ||
+      G.shutdown_requested.load()) {
+    info->set_status("Busy");
+    return;
+  }
+
+  if (G.is_incremental_update && !G.proceed_without_source &&
+      G.source_dir[0] == '\0') {
+    G.show_incremental_popup = true;
+    info->set_status("Waiting for source images directory");
+    return;
+  }
+
   std::string source =
       G.input_mode == Status::Source::SRC_FILE ? G.file_path : G.url_input;
   std::string output = G.output_dir;
+  std::string source_dir = G.proceed_without_source ? "" : G.source_dir;
   std::string ua = G.user_agent;
   auto mode = G.input_mode;
-  auto ftype = G.detected_file_type;
   bool verify = G.enable_verification;
 
   info->extracting.store(true);
@@ -473,29 +563,18 @@ void start_extraction(Part* info) {
   info->verification_passed.store(false);
   info->set_verify_status("");
 
-  G.extraction_threads.emplace_back(dump_part, info, source, mode, ftype,
-                                    output, ua, verify);
+  std::lock_guard<std::mutex> lock(G.extraction_threads_mutex);
+  G.extraction_threads.emplace_back(dump_part, info, source, mode, output, ua,
+                                    source_dir, verify);
 }
 
 void load_it() {
-  G.loading_partitions.store(true);
-
   char* json_result = nullptr;
 
   if (G.input_mode == Status::Source::SRC_FILE) {
-    if (G.detected_file_type == Status::SRC_TYPE::TYPE_ZIP) {
-      json_result = payload_list_partitions_zip(G.file_path);
-    } else {
-      json_result = payload_list_partitions(G.file_path);
-    }
+    json_result = payload_list_local_partitions(G.file_path);
   } else {
-    if (G.detected_file_type == Status::SRC_TYPE::TYPE_ZIP) {
-      json_result = payload_list_partitions_remote_zip(
-          G.url_input, G.user_agent, nullptr, nullptr);
-    } else {
-      json_result = payload_list_partitions_remote_bin(
-          G.url_input, G.user_agent, nullptr, nullptr);
-    }
+    json_result = payload_list_remote_partitions(G.url_input, G.user_agent, nullptr);
   }
 
   if (json_result) {
@@ -622,11 +701,13 @@ void top_box() {
     }
   } else if (ImGui::Button("Load Partitions##loadbtn", ImVec2(150, 35)) &&
              can_load) {
-    if (G.loading_thread.joinable()) {
-      G.loading_thread.join();
+    if (!G.loading_partitions.load()) {
+      if (G.loading_thread.joinable()) {
+        G.loading_thread.join();
+      }
+      G.loading_partitions.store(true);
+      G.loading_thread = std::thread(load_it);
     }
-    G.loading_thread = std::thread(load_it);
-    G.loading_thread.detach();
   }
 
   if (!can_load || is_loading) {
@@ -639,15 +720,9 @@ void top_box() {
 
 char* fetch_jsn() {
   if (G.input_mode == Status::Source::SRC_FILE) {
-    if (G.detected_file_type == Status::SRC_TYPE::TYPE_ZIP)
-      return payload_list_partitions_zip(G.file_path);
-    return payload_list_partitions(G.file_path);
+    return payload_list_local_partitions(G.file_path);
   } else {
-    if (G.detected_file_type == Status::SRC_TYPE::TYPE_ZIP)
-      return payload_list_partitions_remote_zip(G.url_input, G.user_agent,
-                                                nullptr, nullptr);
-    return payload_list_partitions_remote_bin(G.url_input, G.user_agent,
-                                              nullptr, nullptr);
+    return payload_list_remote_partitions(G.url_input, G.user_agent, nullptr);
   }
 }
 
@@ -779,6 +854,18 @@ void right_box() {
     ImGui::Text("Operations:");
     ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), "%llu",
                        G.total_operations);
+
+    if (G.is_incremental_update) {
+      ImGui::Spacing();
+      ImGui::TextColored(ImVec4(0.95f, 0.8f, 0.35f, 1.0f), "Incremental OTA");
+      if (G.source_dir[0] != '\0') {
+        ImGui::TextWrapped("Source: %s", G.source_dir);
+      } else if (G.proceed_without_source) {
+        ImGui::TextWrapped("Proceeding without source directory");
+      } else {
+        ImGui::TextWrapped("Source directory not selected");
+      }
+    }
   }
 
   if (!G.security_patch_level.empty()) {
@@ -984,6 +1071,52 @@ void err_box() {
   }
 }
 
+void incremental_box() {
+  if (G.show_incremental_popup) {
+    ImGui::OpenPopup("Incremental OTA Detected");
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(520, 0), ImGuiCond_Appearing);
+
+    if (ImGui::BeginPopupModal("Incremental OTA Detected", nullptr)) {
+      ImGui::TextWrapped("This payload is an incremental update.");
+      ImGui::TextWrapped(
+          "Select the source images directory from the previous build to "
+          "extract differential partitions reliably.");
+      ImGui::Spacing();
+
+      if (G.source_dir[0] != '\0') {
+        ImGui::TextWrapped("Selected source directory:");
+        ImGui::TextWrapped("%s", G.source_dir);
+        ImGui::Spacing();
+      }
+
+      if (ImGui::Button("Select Source Directory", ImVec2(220, 0))) {
+        if (out_chooser_with_title(G.source_dir, sizeof(G.source_dir),
+                                   "Select Source Images Directory")) {
+          G.proceed_without_source = false;
+          G.show_incremental_popup = false;
+          ImGui::CloseCurrentPopup();
+        }
+      }
+
+      ImGui::SameLine();
+      if (ImGui::Button("Proceed Without Source", ImVec2(220, 0))) {
+        G.proceed_without_source = true;
+        G.show_incremental_popup = false;
+        ImGui::CloseCurrentPopup();
+      }
+
+      ImGui::Spacing();
+      if (ImGui::Button("Close", ImVec2(120, 0))) {
+        G.show_incremental_popup = false;
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::EndPopup();
+    }
+  }
+}
+
 void draw() {
   ImGui::SetNextWindowPos(ImVec2(0, 0));
   ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
@@ -1007,6 +1140,7 @@ void draw() {
   ImGui::End();
 
   err_box();
+  incremental_box();
 }
 
 void begin() { payload_init(); }
@@ -1018,20 +1152,7 @@ void quit() {
     G.loading_thread.join();
   }
 
-  {
-    std::lock_guard<std::mutex> lock(G.partitions_mutex);
-    for (auto& part : G.partitions) {
-      part.cancel_flag.store(true);
-    }
-  }
-
-  for (auto& t : G.extraction_threads) {
-    if (t.joinable()) {
-      t.join();
-    }
-  }
-
-  G.extraction_threads.clear();
+  G.cancel_and_join_extractions();
 
   payload_cleanup();
 }
