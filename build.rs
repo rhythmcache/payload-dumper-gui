@@ -16,7 +16,8 @@ fn main() {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    let header_path = out_dir.join("payload_dumper.hpp");
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let header_path = PathBuf::from(&crate_dir).join("payload_dumper.hpp");
 
     let config = cbindgen::Config {
         language: cbindgen::Language::Cxx,
