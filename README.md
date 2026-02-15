@@ -20,6 +20,7 @@ Windows and Android app to extract Android OTA payloads from local files or HTTP
 - Cancel running extractions
 - Optional limit on concurrent extractions to control CPU and I/O usage
 - **SHA-256** checksum verification for extracted partitions
+- **Differential OTAs** are supported (Experimental).
 
 ---
 
@@ -41,7 +42,7 @@ Windows and Android app to extract Android OTA payloads from local files or HTTP
 
 ## Limitations
 - Currently available only for **Windows** and **Android**
-- **Multi-extent OTAs** and **differential OTAs** are not supported
+
 - The remote server must support **HTTP Range requests** for extraction from URLs
 
 ---
