@@ -2,6 +2,7 @@ package com.rhythmcache.payloaddumper.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -17,11 +18,8 @@ private val DarkColorScheme =
 private val LightColorScheme =
     lightColorScheme(primary = Purple40, secondary = PurpleGrey40, tertiary = Pink40)
 
-private val AmoledColorScheme =
-    darkColorScheme(
-        primary = Purple80,
-        secondary = PurpleGrey80,
-        tertiary = Pink80,
+private fun ColorScheme.toAmoledScheme(): ColorScheme =
+    copy(
         background = Color.Black,
         surface = Color.Black,
         surfaceVariant = Color(0xFF1A1A1A),
@@ -50,17 +48,22 @@ fun PayloadDumperTheme(
         ThemeMode.AMOLED -> true
       }
 
-  val colorScheme =
+  val context = LocalContext.current
+  val baseColorScheme =
       when {
-        themeMode == ThemeMode.AMOLED -> AmoledColorScheme
-
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-          val context = LocalContext.current
           if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+      }
+
+  val colorScheme =
+      if (themeMode == ThemeMode.AMOLED) {
+        baseColorScheme.toAmoledScheme()
+      } else {
+        baseColorScheme
       }
 
   MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
