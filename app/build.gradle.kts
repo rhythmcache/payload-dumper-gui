@@ -61,7 +61,7 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "USER_AGENT", "\"PayloadDumper-GUI/$versionName\"")
     buildConfigField("String", "GITHUB_URL", "\"https://github.com/rhythmcache\"")
-    buildConfigField("String", "TELEGRAM_URL", "\"https://t.me/rhythmcache\"")
+    buildConfigField("String", "TELEGRAM_URL", "\"https://t.me/dusk133\"")
     buildConfigField("String", "REPO_URL", "\"https://github.com/rhythmcache/payload-dumper-gui\"")
     buildConfigField(
         "String",
