@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
   alias(libs.plugins.android.application)
-  alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
 }
@@ -33,7 +32,7 @@ val (versionMajor, versionMinor, versionPatch) = getVersionFromCargoToml()
 
 android {
   namespace = "com.rhythmcache.payloaddumper"
-  compileSdk = 36
+  compileSdk = 37
 
   dependenciesInfo {
     includeInApk = false
