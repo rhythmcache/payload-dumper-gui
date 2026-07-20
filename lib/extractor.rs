@@ -96,7 +96,7 @@ async fn detect_local_type(path: &Path) -> Result<FileType> {
 }
 
 async fn detect_remote_type(url: &str, ua: Option<&str>, ck: Option<&str>) -> Result<FileType> {
-    let reader = HttpReader::new(url.to_string(), ua, ck).await?;
+    let reader = HttpReader::new(url.to_string(), ua, ck, None).await?;
     let mut magic = [0u8; 4];
     reader.read_at(0, &mut magic).await?;
 
@@ -212,8 +212,8 @@ pub fn list_remote_partitions(url: String, ua: Option<&str>, ck: Option<&str>) -
         let file_type = detect_remote_type(&url, ua, ck).await?;
 
         let (manifest, data_offset, _) = match file_type {
-            FileType::Zip => parse_remote_payload(url, ua, ck).await?,
-            FileType::Bin => parse_remote_bin_payload(url, ua, ck).await?,
+            FileType::Zip => parse_remote_payload(url, ua, ck, None).await?,
+            FileType::Bin => parse_remote_bin_payload(url, ua, ck, None).await?,
         };
 
         let metadata = get_metadata(&manifest, data_offset, false, None).await?;
@@ -299,8 +299,8 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
         let file_type = detect_remote_type(&url, ua, ck).await?;
 
         let (manifest, data_offset, _) = match file_type {
-            FileType::Zip => parse_remote_payload(url.clone(), ua, ck).await?,
-            FileType::Bin => parse_remote_bin_payload(url.clone(), ua, ck).await?,
+            FileType::Zip => parse_remote_payload(url.clone(), ua, ck, None).await?,
+            FileType::Bin => parse_remote_bin_payload(url.clone(), ua, ck, None).await?,
         };
 
         let partition = find_partition(&manifest, partition_name)?;
@@ -316,7 +316,7 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
 
         match file_type {
             FileType::Zip => {
-                let reader = RemoteAsyncZipPayloadReader::new(url, ua, ck).await?;
+                let reader = RemoteAsyncZipPayloadReader::new(url, ua, ck, None).await?;
                 dump_partition(
                     partition,
                     data_offset,
@@ -329,7 +329,7 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
                 .await
             }
             FileType::Bin => {
-                let reader = RemoteAsyncBinPayloadReader::new(url, ua, ck).await?;
+                let reader = RemoteAsyncBinPayloadReader::new(url, ua, ck, None).await?;
                 dump_partition(
                     partition,
                     data_offset,
