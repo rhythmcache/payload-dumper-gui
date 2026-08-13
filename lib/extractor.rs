@@ -193,12 +193,20 @@ pub fn list_local_partitions<P: AsRef<Path>>(path: P) -> Result<String> {
     RUNTIME.block_on(async {
         let file_type = detect_local_type(path.as_ref()).await?;
 
+        // normalize to (manifest, data_offset)
         let (manifest, data_offset) = match file_type {
-            FileType::Bin => parse_local_payload(path.as_ref()).await?,
-            FileType::Zip => parse_local_zip_payload(path.as_ref().to_path_buf()).await?,
+            FileType::Bin => {
+                let (m, d) = parse_local_payload(path.as_ref()).await?;
+                (m, d)
+            }
+            FileType::Zip => {
+                let (m, d, _zip_info) = parse_local_zip_payload(path.as_ref().to_path_buf()).await?;
+                (m, d)
+            }
         };
 
-        let metadata = get_metadata(&manifest, data_offset, false, None).await?;
+        // get_metadata now requires a source_info parameter; pass None when not available
+        let metadata = get_metadata(&manifest, data_offset, false, None, None).await?;
         build_summary(&manifest, &metadata)
     })
 }
@@ -211,12 +219,18 @@ pub fn list_remote_partitions(url: String, ua: Option<&str>, ck: Option<&str>) -
     RUNTIME.block_on(async {
         let file_type = detect_remote_type(&url, ua, ck).await?;
 
-        let (manifest, data_offset, _) = match file_type {
-            FileType::Zip => parse_remote_payload(url, ua, ck, None).await?,
-            FileType::Bin => parse_remote_bin_payload(url, ua, ck, None).await?,
+        let (manifest, data_offset) = match file_type {
+            FileType::Zip => {
+                let (m, d, _zip_info) = parse_remote_payload(url, ua, ck, None).await?;
+                (m, d)
+            }
+            FileType::Bin => {
+                let (m, d, _content_len) = parse_remote_bin_payload(url, ua, ck, None).await?;
+                (m, d)
+            }
         };
 
-        let metadata = get_metadata(&manifest, data_offset, false, None).await?;
+        let metadata = get_metadata(&manifest, data_offset, false, None, None).await?;
         build_summary(&manifest, &metadata)
     })
 }
@@ -236,8 +250,14 @@ pub fn extract_local_partition<P1: AsRef<Path>, P2: AsRef<Path>>(
         let file_type = detect_local_type(path.as_ref()).await?;
 
         let (manifest, data_offset) = match file_type {
-            FileType::Bin => parse_local_payload(path.as_ref()).await?,
-            FileType::Zip => parse_local_zip_payload(path.as_ref().to_path_buf()).await?,
+            FileType::Bin => {
+                let (m, d) = parse_local_payload(path.as_ref()).await?;
+                (m, d)
+            }
+            FileType::Zip => {
+                let (m, d, _zip_info) = parse_local_zip_payload(path.as_ref().to_path_buf()).await?;
+                (m, d)
+            }
         };
 
         let partition = find_partition(&manifest, partition_name)?;
@@ -298,9 +318,15 @@ pub fn extract_remote_partition<P: AsRef<Path>>(
     RUNTIME.block_on(async {
         let file_type = detect_remote_type(&url, ua, ck).await?;
 
-        let (manifest, data_offset, _) = match file_type {
-            FileType::Zip => parse_remote_payload(url.clone(), ua, ck, None).await?,
-            FileType::Bin => parse_remote_bin_payload(url.clone(), ua, ck, None).await?,
+        let (manifest, data_offset) = match file_type {
+            FileType::Zip => {
+                let (m, d, _zip_info) = parse_remote_payload(url.clone(), ua, ck, None).await?;
+                (m, d)
+            }
+            FileType::Bin => {
+                let (m, d, _content_len) = parse_remote_bin_payload(url.clone(), ua, ck, None).await?;
+                (m, d)
+            }
         };
 
         let partition = find_partition(&manifest, partition_name)?;
