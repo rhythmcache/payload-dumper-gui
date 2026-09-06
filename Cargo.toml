@@ -23,8 +23,11 @@ cbindgen = "0.29"
 
 [features]
 default = []
-jni     = ["dep:jni"]
-capi    = []
+jni = [
+    "dep:jni",
+    "payload_dumper_core/android-webpki-roots",
+]
+capi = []
 
 [profile.release]
 opt-level       = 3
