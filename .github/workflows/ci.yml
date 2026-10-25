@@ -17,9 +17,6 @@ jobs:
           distribution: temurin
           java-version: 25
 
-      - name: android SDK set up
-        uses: android-actions/setup-android@v3
-
       - name: exec perm
         run: chmod +x gradlew
 
