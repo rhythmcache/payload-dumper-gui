@@ -1,21 +1,36 @@
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Preserve line numbers for stack traces
+-keepattributes SourceFile,LineNumberTable
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Preserve all native method declarations
+-keepclasseswithmembernames,includedescriptorclasses class * {
+    native <methods>;
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep PayloadDumper and its JNI callback interface
+-keep class com.rhythmcache.payloaddumper.PayloadDumper {
+    *;
+}
+
+-keep class com.rhythmcache.payloaddumper.PayloadDumper$ProgressCallback {
+    *;
+}
+
+# Keep any classes (including anonymous ones) implementing ProgressCallback and their methods
+-keep class * implements com.rhythmcache.payloaddumper.PayloadDumper$ProgressCallback {
+    public *;
+}
+
+# Keep Kotlinx Serialization data classes and serializer methods
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+
+-keepclassmembers class com.rhythmcache.payloaddumper.PayloadInfo {
+    *;
+}
+
+-keepclassmembers class com.rhythmcache.payloaddumper.Partition {
+    *;
+}

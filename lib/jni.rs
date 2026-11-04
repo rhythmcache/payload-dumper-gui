@@ -163,7 +163,10 @@ fn call_java_callback(
                     JValue::Object(&warning_msg),
                 ],
             )
-            .map_err(|e| format!("Failed to call callback: {}", e))?;
+            .map_err(|e| {
+                let _ = env.exception_clear();
+                format!("Failed to call callback: {}", e)
+            })?;
 
         check_exception(env, "Java callback")?;
 
