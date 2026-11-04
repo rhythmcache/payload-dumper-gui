@@ -110,9 +110,6 @@ jobs:
           distribution: temurin
           java-version: 25
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Decode
         run: |
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > payload-dumper-release.keystore
