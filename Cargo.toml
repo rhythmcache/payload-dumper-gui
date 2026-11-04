@@ -25,7 +25,6 @@ cbindgen = "0.29"
 default = []
 jni = [
     "dep:jni",
-    "payload_dumper_core/android-webpki-roots",
 ]
 capi = []
 
